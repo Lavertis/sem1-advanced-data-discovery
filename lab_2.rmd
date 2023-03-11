@@ -1,0 +1,219 @@
+# Parametry rozkładu
+
+## ŚREDNIA
+1. Policzyć średni wiek w pewnej rodzinie: dziadek 82 lata, babcia 74 lata, ojciec 47 lat,
+matka 44 lata, syn 21 lat, córka 21 lat, córka 17 lat
+```{r}
+wiek <- c(82, 74, 47, 44, 21, 21, 17)
+sum(wiek) / length(wiek)
+mean(wiek)
+```
+
+## ŚREDNIA WAŻONA
+2. Na podstawie danych w tabeli dotyczących liczby reklamacji w ciągu miesiąca w pewnym centrum
+handlowym, obliczyć średnią liczbę reklamacji.
+```{r}
+sklepy <- c(5, 15, 25, 30, 15, 10)
+reklamacje <- c(0, 1, 2, 3, 4, 5)
+sum(reklamacje * sklepy) / sum(sklepy)
+weighted.mean(reklamacje, sklepy)
+```
+
+## ŚREDNIA Z DANYCH W SZEREGU ROZDZIELCZYM
+3. W pewnym przedsiębiorstwie zanotowano czas eksploatacji używanych maszyn.
+Dane (w latach) zostały zebrane w postaci szeregu rozdzielczego przedstawionego w tabeli.
+```{r}
+czas_eksploatacji <- c(1, 3, 5, 7)
+liczba_maszyn <- c(3, 10, 16, 20)
+sum(czas_eksploatacji * liczba_maszyn) / sum(liczba_maszyn)
+weighted.mean(czas_eksploatacji, liczba_maszyn)
+```
+
+## MODA
+4. Dane są następujące wektory:
+(19, 4, 5, 7, 29, 19, 29, 13, 25, 19)
+("blue", "red", "green", "yellow", "red", "blue")
+Oblicz dla każdego z nich modę (dominantę).
+```{r}
+if (!require("modeest")) {
+    install.packages("modeest")
+}
+library("modeest")
+vec1 <- c(19, 4, 5, 7, 29, 19, 29, 13, 25, 19)
+vec2 <- c("blue", "red", "green", "yellow", "red", "blue")
+mode(vec1)
+mlv(vec2, method = "mfv")
+```
+
+## MEDIANA I KWARTYLE
+5. a) Wróćmy do danych z przykładu dla zwykłej średniej.
+Oblicz, jaki to wiek, taki że połowa rodziny ma mniej lat, a połowa rodziny ma więcej lat.
+```{r}
+wiek <- c(82, 74, 47, 44, 21, 21, 17)
+quantile(wiek, probs = c(0.5))
+median(wiek)
+```
+
+5. b) Wylosuj 100 liczb z rozkładu normalnego o średniej 2 i odchyleniu standardowym 4.
+Dla wylosowanego wektora oblicz medianę i kwartyle (pierwszy kwartyl to kwantyl 25%,
+mediana to kwantyl 50%, trzeci kwartyl to kwantyl 75%).
+```{r}
+numbers <- rnorm(100, mean = 2, sd = 4)
+quantile(numbers, probs = c(0.25, 0.5, 0.75))
+```
+
+# Wskaźniki rozproszenia (zmienności)
+
+## WARIANCJA I ODCHYLENIE STANDARDOWE
+7. a) Wylosuj 100 liczb z rozkładu normalnego o średniej 0 i odchyleniu standardowym 1.
+Oblicz odchylenie standardowe i wariancję wylosowanego wektora. Czy faktycznie wynoszą one 1?
+```{r}
+numbers <- rnorm(100, mean = 0, sd = 1)
+var(numbers)
+sd(numbers)
+```
+
+7. b) Zadanie “a” powtórz stukrotnie, w każdej iteracji zapisując wyniki. Oblicz średnie
+odchylenie standardowe i wariancję.
+```{r}
+repeat_count <- 100
+variances <- rep(NA, repeat_count)
+standard_deviations <- rep(NA, repeat_count)
+for (i in 1:repeat_count) {
+    numbers <- rnorm(100, mean = 0, sd = 1)
+    variances[i] <- var(numbers)
+    standard_deviations[i] <- sd(numbers)
+}
+mean(variances)
+mean(standard_deviations)
+```
+
+7. c) Lekkoatleta A na zawodach w całym sezonie uzyskał w skoku w dal następujące wyniki w metrach:
+6.82, 6.96, 7.23, 7.05, 7.80, 7.55. Lekkoatleta B, startujący w tych samych zawodach,
+uzyskał takie wyniki, że ich średnia arytmetyczna wyniosła 7.50m, a suma ich kwadratów 340 m2.
+Który z tych lekkoatletów osiągał regularniejsze wyniki?
+```{r}
+```
+
+## WSPÓŁCZYNNIK ZMIENNOŚCI
+8. a) Załóżmy, że mamy do wyboru dwa typy akcji, w które możemy zainwestować: A i B.
+Dla pierwszej z nich średni zysk z ostatniego okresu wyniósł 7.6, a odchylenie 3.2.
+Dla drugiej odpowiednio 6.8 i 2.5. Która akcja jest mniej ryzykowna?
+```{r}
+var_coef_1 <- 3.2 / 7.6
+var_coef_2 <- 2.5 / 6.8
+
+cat("Współczynnik zmienności dla akcji A:", var_coef_1)
+cat("Współczynnik zmienności dla akcji B:", var_coef_2)
+
+if (var_coef_1 < var_coef_2) {
+    print("Akcja A jest mniej ryzykowna")
+} else {
+    print("Akcja B jest mniej ryzykowna")
+}
+```
+
+# Miary asymietrii
+
+## WSPÓŁCZYNNIK SKOŚNOŚCI
+9. W trzech 100-osobowych grupach badano czas reakcji na lek. Dane przedstawiono w tabeli.
+Zbadać siłę i kierunek asymetrii za pomocą współczynnika skośności.
+Dodatkowo można asymetrie zobrazować na histogramach.
+
+```{r}
+if (!require("moments")) {
+    install.packages("moments")
+}
+if (!require("ggplot2")) {
+    install.packages("ggplot2")
+}
+library("moments")
+library("ggplot2")
+grupa1 <- c(10, 20, 40, 20, 10)
+grupa2 <- c(5, 35, 25, 25, 10)
+grupa3 <- c(10, 25, 25, 35, 5)
+czas_reakcji <- c(15, 25, 35, 45, 55)
+skewness(grupa1)
+skewness(grupa2)
+skewness(grupa3)
+grupa1_long <- rep(czas_reakcji, times = grupa1)
+grupa2_long <- rep(czas_reakcji, times = grupa2)
+grupa3_long <- rep(czas_reakcji, times = grupa3)
+```
+
+# Miary koncentracji (skupienia)
+
+## KURTOZA
+10. Wyznaczyć i porównać koncentracje utargów w dwóch sieciach sklepów. Dane znajdują się w tabeli.
+
+Utarg	Liczba sklepów sieci A	Liczba sklepów sieci B
+2-4	4	45
+4-6	10	5
+6-8	3	0
+8-10	2	5
+10-12	1	45
+```{r}
+if (!require("moments")) {
+    install.packages("moments")
+}
+library("moments")
+grupa_a <- c(4, 10, 3, 2, 1)
+grupa_b <- c(45, 5, 0, 5, 45)
+utarg <- c(3, 5, 7, 9, 11)
+grupa_a_long <- rep(utarg, times = grupa_a)
+grupa_b_long <- rep(utarg, times = grupa_b)
+kurtosis(grupa_a_long)
+kurtosis(grupa_b_long)
+```
+
+## ZADANIA NA OBLICZANIE STATYSTYK
+1. Weźmy pod uwagę zmienną iris$Sepal.Length ze zbioru iris. Oblicz:
+a) wszystkie statystyki porządkowe i zapisać je w wektorze
+b) wartość sto piętnastą co do wielkości
+c) rozstęp międzykwartylowy
+d) skośność
+e) kurtozę
+
+```{r}
+if (!require("datasets")) {
+    install.packages("datasets")
+}
+library("datasets")
+head(iris)
+summary(iris$Sepal.Length)
+sort(iris$Sepal.Length)[115]
+quantile_25 <- quantile(iris$Sepal.Length, 0.25)
+quantile_75 <- quantile(iris$Sepal.Length, 0.75)
+quantile_75 - quantile_25
+skewness(iris$Sepal.Length)
+kurtosis(iris$Sepal.Length)
+```
+
+2. Napisz i przetestuj funkcję, która znajduje współczynnik zmienności z próby.
+```{r}
+var_coef <- function(x) {
+    sd(x) / mean(x) * 100
+}
+var_coef(iris$Sepal.Length)
+```
+
+3. Opisz cechy drzew ze zbioru trees (z pakietu podstawowego).
+Czy rozkłady tych cech są skupione wokół średniej bardziej czy mniej niż rozkład normalny?
+Czy rozkłady są asymetryczne?
+```{r}
+if (!require("datasets")) {
+    install.packages("datasets")
+}
+library("datasets")
+head(trees)
+rozklad <- function(x) {
+    cat("Średnia:", mean(x), "\n")
+    cat("Odchylenie standardowe:", sd(x), "\n")
+    cat("Współczynnik zmienności:", var_coef(x), "\n")
+    cat("Skośność:", skewness(x), "\n")
+    cat("Kurtoza:", kurtosis(x), "\n")
+}
+rozklad(trees$Girth)
+rozklad(trees$Height)
+rozklad(trees$Volume)
+```

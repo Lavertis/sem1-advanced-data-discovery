@@ -187,12 +187,15 @@ $H_0$: Sepal.Length ma rozkład normalny
 $H_1$: Sepal.Length nie ma rozkładu normalnego
 ```{r}
 shapiro.test(iris$Sepal.Length) # brak normalności rozkładu
-# rstatix library
-if (!require("rstatix")) {
+if (!require(rstatix)) {
     install.packages("rstatix")
 }
 library(rstatix)
+if (!require(dplyr)) {
+    install.packages("dplyr")
+}
+library(dplyr)
 iris %>%
     group_by(Species) %>% # group_by(iris, Species)
     shapiro_test(Sepal.Length) # rozkłady w grupach są normalne
-```
+``` # TODO NOT WORKING

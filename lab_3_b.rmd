@@ -1,0 +1,26 @@
+ZADANIA
+1. Dla zbioru pi2000 (2000 pierwszych cyfr liczby pi) z pakietu UsingR wykonaj histogram.
+Znajdź procent cyfr 0-9 w tym zbiorze danych.
+Dopasuj funkcję gęstości do tych danych (funkcja density()).
+```{r}
+if (!require("UsingR")) install.packages("UsingR")
+library("UsingR")
+hist(pi2000, breaks = 10, main = "Histogram", xlab = "Cyfry", ylab = "Liczba wystąpień")
+```
+
+2. Dla zbioru chips (grubość chipsów) z pakietu UsingR wykonaj wykres pudełkowy w zależności od
+miejsca pomiarów (powinno być 8 wykresów na jednym diagramie).
+Co można na ich podstawie powiedzieć o średniej i wariancji?
+Analogiczne zadanie dla zbioru chicken (waga kurczaków w zależności od metody żywienia).
+
+3. W zbiorze danych survey (wyniki ankiety (palenie, cechy fizyczne, płeć, wiek itp.) wśród 237
+studentów pierwszego roku na uniwersytecie w Adelajdzie) z pakietu MASS znajduje się zmienna Exer
+zawierająca informacje na temat częstotliwości ćwiczenia przez studentów.
+Dla tej zmiennej wykonaj wykres słupkowy oraz kołowy (wraz z legendą).
+Podobne wykresy wykonaj dla zmiennej Smoke, która zawiera informacje na temat palenia papierosów
+
+4. Zbiór danych orings z pakietu DAAG zawiera dane na temat wypadków amerykańskich statków
+kosmicznych przed katastrofą promu Challenger (28.01.1986).
+Jedynie obserwacje 1,2,4,11,13 oraz 18 były analizowane przed katastrofą.
+Utwórz z tych obserwacji nowy zbiór danych oraz narysuj wykres całkowitej liczby wypadków
+w zależności od temperatury. Wykonaj podobny wykres dla całego zbioru danych.

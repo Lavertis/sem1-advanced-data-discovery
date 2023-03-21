@@ -1,15 +1,16 @@
 # Testowanie hipotez parametrycznych
 
+
 ## Test dla pojedynczej średniej
-Zadanie 1
+
+### Zadanie 1
 Wiadomo, że rozkład wyników pomiarów głębokości morza w pewnym rejonie jest normalny z odchyleniem
 standardowym 5m. Dokonano 5 niezależnych pomiarów głębokości morza w tym rejonie i uzyskano
 następujące wyniki (w metrach) 862, 870, 876, 866, 871. Na poziomie istotności α=0.05 zweryfikować
 hipotezę, że przeciętna głębokość morza w tym rejonie wynosi 870m.
+
 Rozwiązanie:
-
 Hipoteza zerowa ma postać: H0:μ=870, a hipoteza alternatywna H1:μ≠870
-
 Ponieważ przyjmujemy,że rozkład głębokości morza jest rozkładem normalnym, to możemy użyć testu 
 t -> funkcja t.test. W zależności od postaci hipotezy alternatywnej,argument alternative może
 przyjmować wartość "two.sided" (obustronna czyli /neq; jest to wartość domyślna),
@@ -20,15 +21,41 @@ x <- c(862, 870, 876, 866, 871)
 t.test(x, alternative = "two.sided", mu = 870)
 ```
 
+### Zadanie 2
+Automat produkuje określonych wymiarów blaszki o nominalnej grubości 0.04mm.
+Wylosowana próba 25 blaszek dała średnią grubość 0.037mm oraz s=0.005mm.
+Czy można stwierdzić, że produkowane blaszki są cieńsze niż 0.04mm?
+Przyjąć poziom istotności 0.01 oraz rozkład normalny grubości blaszek.
+Przykładowo: funkcja tsum.test z biblioteki PASWR.
+```{r}
+if (!require(PASWR)) {
+    install.packages("PASWR")
+}
+library(PASWR)
+tsum.test(
+    mean.x = 0.037,
+    s.x = 0.005,
+    n.x = 25,
+    mu = 0.04,
+    alternative = "less"
+)
+```
+P-value z testu t wynosi 0.00310, a poziom istotności to 0.01. P-value jest mniejsze od poziomu
+istotności, więc odrzucamy hipotezę zerową. Na podstawie testu można stwierdzić, że produkowane 
+blaszki są cieńsze niż 0.04mm.
+
+### Zadanie 3
 Według norm producenta średnie zużycie benzyny w samochodach marki Toyota, model Corolla 1.6,
 produkowanych w latach 2007-2013 powinno wynosić 7.5 l/100km.
 Użytkownicy uważają, że to zużycie jest większe niż podane. W celu sprawdzenia podejrzeń
 użytkowników pobrano losową próbę 24 samochodów, która dała następujące wyniki:
-(6.75,7.75,7.6,7.05,8.9,8.25,7.25,8.25,7.3,7.2,7.5,7.45,7.75,7.85,8.3,8.25,7.3,6.5,8.25,8.45,7.75,8.8,8.75,7.1)
+(6.75,7.75,7.6,7.05,8.9,8.25,7.25,8.25,7.3,7.2,7.5,7.45,7.75,
+7.85,8.3,8.25,7.3,6.5,8.25,8.45,7.75,8.8,8.75,7.1)
 
 Czy informacje pochodzące z próby upoważniają do twierdzenia, że norma podana przez producenta jest
 błędna i w rzeczywistości średnie zużycie benzyny przekracza 7.5 l/100km?
-Należy przyjąć poziom istotności 0.02 i założenie, że zużycie benzyny jest zmienną o rozkładzie normalnym.
+Należy przyjąć poziom istotności 0.02 i założenie, że zużycie benzyny jest zmienną
+o rozkładzie normalnym.
 ```{r}
 x <- c(
     6.75, 7.75, 7.6, 7.05, 8.9, 8.25, 7.25, 8.25, 7.3, 7.2, 7.5, 7.45,
@@ -41,18 +68,21 @@ P-value jest większe od poziomu istotności, zatem nie ma podstaw do odrzucenia
 Średnie zużycie faktycznie wynosi 7.5l/100km przy poziomie istotności 0.02.
 Decyzja jest niejednoznaczna, bo p-value i poziom istotności mają bliskie wartości.
 
+### Zadanie 4
+Dzienne zużycie wody [w m3] w 40 wylosowanych gospodarstwach domowych pewnego miasta
+przedstawiało się następująco:
+0.012, 0.124, 0.108, 0.127, 0.131, 0.142, 0.083, 0.079, 0.125, 0.131, 0.113, 0.111, 0.093, 0.125,
+0.136, 0.134, 0.094, 0.082, 0.123, 0.199, 0.062, 0.146, 0.135, 0.119, 0.115, 0.142, 0.128, 0.114,
+0.129, 0.118, 0.181, 0.136, 0.104, 0.123, 0.118, 0.059, 0.082, 0.147, 0.144, 0.126
 
-Zadanie 4
-Dzienne zużycie wody [w m3] w 40 wylosowanych gospodarstwach domowych pewnego miasta przedstawiało się następująco:
-0.012, 0.124, 0.108, 0.127, 0.131, 0.142, 0.083, 0.079, 0.125, 0.131, 0.113, 0.111, 0.093, 0.125, 0.136, 0.134, 0.094, 0.082, 0.123, 0.199, 0.062, 0.146, 0.135, 0.119, 0.115, 0.142, 0.128, 0.114, 0.129, 0.118, 0.181, 0.136, 0.104, 0.123, 0.118, 0.059, 0.082, 0.147, 0.144, 0.126
-
-Na poziomie istotności 0.05 należy zweryfikować hipotezę, że rzeczywiste średnie dzienne zużycie wody w gospodarstwach domowych tego miasta jest wyższe niż 0.1 m3.
+Na poziomie istotności 0.05 należy zweryfikować hipotezę, że rzeczywiste średnie dzienne
+zużycie wody w gospodarstwach domowych tego miasta jest wyższe niż 0.1 m3.
 ```{r}
 x <- c(
-    0.012, 0.124, 0.108, 0.127, 0.131, 0.142, 0.083, 0.079, 0.125, 0.131, 0.113, 0.111,
-    0.093, 0.125, 0.136, 0.134, 0.094, 0.082, 0.123, 0.199, 0.062, 0.146, 0.135, 0.119,
-    0.115, 0.142, 0.128, 0.114, 0.129, 0.118, 0.181, 0.136, 0.104, 0.123, 0.118, 0.059,
-    0.082, 0.147, 0.144, 0.126
+    0.012, 0.124, 0.108, 0.127, 0.131, 0.142, 0.083, 0.079, 0.125, 0.131, 0.113,
+    0.111, 0.093, 0.125, 0.136, 0.134, 0.094, 0.082, 0.123, 0.199, 0.062, 0.146,
+    0.135, 0.119, 0.115, 0.142, 0.128, 0.114, 0.129, 0.118, 0.181, 0.136, 0.104,
+    0.123, 0.118, 0.059, 0.082, 0.147, 0.144, 0.126
 )
 t.test(x, alternative = "greater", mu = 0.1)
 ```
@@ -60,29 +90,14 @@ P-value z testu t wynosi 0.0007402, a poziom istotności wynosił 0.05. P-value 
 mniejsze od poziomu istotności. Odrzucamy hipotezę zerową na korzyść hipotezy alternatywnej.
 Zużycie wody jest wyższe niż 0.1 m3.
 
-
-Zadanie 2
-Automat produkuje określonych wymiarów blaszki o nominalnej grubości 0.04mm.
-Wylosowana próba 25 blaszek dała średnią grubość 0.037mm oraz s=0.005mm.
-Czy można stwierdzić, że produkowane blaszki są cieńsze niż 0.04mm?
-Przyjąć poziom istotności 0.01 oraz rozkład normalny grubości blaszek.
-Przykładowo: funkcja tsum.test z biblioteki PASWR.
-```{r}
-if (!require(PASWR)) {
-    install.packages("PASWR")
-}
-library(PASWR)
-tsum.test(mean.x = 0.037, s.x = 0.005, n.x = 25, mu = 0.04, alternative = "less")
-```
-P-value z testu t wynosi 0.00310, a poziom istotności to 0.01. P-value jest mniejsze od poziomu
-istotności, więc odrzucamy hipotezę zerową. Na podstawie testu można stwierdzić, że produkowane 
-blaszki są cieńsze niż 0.04mm.
-
-
-Zadanie 5
-Pojemność płuc studentów uprawiających czynnie sport ma rozkład normalny z odchyleniem standardowym 440cm3
-, natomiast studentów nieuprawiających sportu 620cm3
-. Wylosowano z obu populacji próby: dla studentów uprawiających sport o liczebności 20 i średniej 4080, a dla studentów nieuprawiających sportu o liczebności 15 i średniej 3610. Przyjmując poziom istotności 0.01, sprawdzić hipotezę, że uprawianie sportu zwiększa pojemność płuc studentów.
+### Zadanie 5
+Pojemność płuc studentów uprawiających czynnie sport ma rozkład normalny
+z odchyleniem standardowym 440cm3, natomiast studentów nieuprawiających sportu 620cm3.
+Wylosowano z obu populacji próby:
+dla studentów uprawiających sport o liczebności 20 i średniej 4080,
+a dla studentów nieuprawiających sportu o liczebności 15 i średniej 3610.
+Przyjmując poziom istotności 0.01, sprawdzić hipotezę,że uprawianie sportu zwiększa pojemność
+płuc studentów.
 
 $\mu_1$ - średnia pojemność płuc studentów uprawiających sport
 $\mu_2$ - średnia pojemność płuc studentów nieuprawiających sportu
@@ -94,21 +109,28 @@ if (!require(PASWR)) {
     install.packages("PASWR")
 }
 library(PASWR)
-tsum.test(mean.x = 4080, s.x = 440, n.x = 20, mean.y = 3610, s.y = 620, n.y = 15, alternative = "greater")
+tsum.test(
+    mean.x = 4080,
+    s.x = 440,
+    n.x = 20,
+    mean.y = 3610,
+    s.y = 620,
+    n.y = 15,
+    alternative = "greater"
+)
 ```
-P-value z testu t dla dwóch prób wynosi 0.009791, a poziom istotności to 0.01. P-value jest mniejsze
-od poziomu istotności, więc udrzucamy hopitezę zerową na korzyść hipotezy alternatywnej, czyli
-średnia pojemność płuc była większa w grupie studentów uprawiających sport.
+P-value z testu t dla dwóch prób wynosi 0.009791, a poziom istotności to 0.01.
+P-value jest mniejsze od poziomu istotności, więc udrzucamy hopitezę zerową na korzyść hipotezy
+alternatywnej, czyli średnia pojemność płuc była większa w grupie studentów uprawiających sport.
 
-
-Zadanie 6
-W pewnym przedsiębiorstwie opracowano dwie metody produkcji wyrobu. Dla sprawdzenia, czy obie metody są jednakowo materiałochłonne, zbadano dane o zużyciu surowca dla każdej z metod (w przybliżeniu na jednostkę gotowego produktu), otrzymując wyniki:
-
+### Zadanie 6
+W pewnym przedsiębiorstwie opracowano dwie metody produkcji wyrobu.
+Dla sprawdzenia, czy obie metody są jednakowo materiałochłonne, zbadano dane o zużyciu surowca dla
+każdej z metod (w przybliżeniu na jednostkę gotowego produktu), otrzymując wyniki:
 przy metodzie I: 3.9, 3.7, 2.7, 2.9, 3.8
-
 przy metodzie II: 3.9, 1.8, 5.2, 1.7
-
-Zweryfikować na poziomie istotności α=0.05 hipotezę, że wartości przeciętne zużycia surowca nie różnią się istotnie.
+Zweryfikować na poziomie istotności α=0.05 hipotezę, że wartości przeciętne zużycia surowca
+nie różnią się istotnie.
 
 $mu_1$ - średnie zużycie surowca przy metodzie I
 $mu_2$ - średnie zużycie surowca przy metodzie II
@@ -121,12 +143,10 @@ metoda2 <- c(3.9, 1.8, 5.2, 1.7)
 t.test(x = metoda1, y = metoda2, alternative = "two.sided")
 ```
 P-value z testu t wynosi 0.7938, a poziom istotności to 0.05. P-value jest znacznie większe od
-poziomu istotności, a więc nie ma podstaw do odrzucenia hipotezy zerowej.
-Średnie zużycie surowca w obu metodach jest jednakowe (nie różni się istotnie na poziomie istotności 0.05).
+poziomu istotności, a więc nie ma podstaw do odrzucenia hipotezy zerowej. Średnie zużycie surowca
+w obu metodach jest jednakowe (nie różni się istotnie na poziomie istotności 0.05).
 
-
-
-Zadanie 7 (test dla populacji zależnych)
+### Zadanie 7 (test dla populacji zależnych)
 Zmierzono ciśnienie tętnicze wśród losowo wybranej grupy chorych na pewną chorobę przed i po 
 podaniu takiego samego leku każdemu z badanych pacjentów. Otrzymano następujące wyniki
 
@@ -138,9 +158,10 @@ Pacjent	Ciśnienie przed podaniem leku	Ciśnienie po podaniu leku
 5	190	200
 6	250	230
 7	180	180
-Na poziomie istotności α=0.05 zweryfikować hipotezę, że stosowany lek nie powoduje spadku ciśnienia 
-u pacjentów, wobec hipotezy alternatywnej, że wartość przeciętna ciśnienia przed podaniem leku jest wyższa niż po podaniu.
 
+Na poziomie istotności α=0.05 zweryfikować hipotezę, że stosowany lek nie powoduje spadku ciśnienia 
+u pacjentów, wobec hipotezy alternatywnej, że wartość przeciętna ciśnienia przed podaniem leku
+jest wyższa niż po podaniu.
 
 $m_1$ - średnie ciśnienie przed podaniem leku
 $m_2$ - średnie ciśnienie po podaniu leku
@@ -152,18 +173,19 @@ przed <- c(210, 180, 260, 270, 190, 250, 180)
 po <- c(180, 160, 220, 260, 200, 230, 180)
 t.test(x = przed, y = po, alternative = "greater", paired = TRUE)
 ```
-P-value z testu t dla prób zależnych wynosi 0.02594, a poziom istotności to 0.05. P-value jest mniejsze
-od poziomu istotności, więc odrzucamy hipotezę zerową na korzyść hipotezy alternatywnej.
-Ciśnienie jest większe przed podaniem leku niż po podaniu leku.
+P-value z testu t dla prób zależnych wynosi 0.02594, a poziom istotności to 0.05.
+P-value jest mniejsze od poziomu istotności, więc odrzucamy hipotezę zerową na korzyść
+hipotezy alternatywnej. Ciśnienie jest większe przed podaniem leku niż po podaniu leku.
 
+## Test normalności (Shapiro-Wilka)
 
-
-
-Test normalności (Shapiro-Wilka)
-Zadanie 8
+### Zadanie 8
 Pobrano próbkę dotyczącą cechy mierzalnej X o liczności n=19; wyniki uporządkowano według wielkości:
-12.4, 14.2, 14.9, 15.6, 16.1, 16.8, 17.3, 17.9, 18.2, 18.6, 19.3, 19.7, 20.4, 21.9, 22.8, 23.7, 25.2, 25.9, 27.4.
-Na poziomie istotności 0.1 zweryfikować testem Shapiro-Wilka hipotezę o normalności rozkładu badanej cechy X w populacji generalnej.
+12.4, 14.2, 14.9, 15.6, 16.1, 16.8, 17.3, 17.9, 18.2, 18.6,
+19.3, 19.7, 20.4, 21.9, 22.8, 23.7, 25.2, 25.9, 27.4.
+Na poziomie istotności 0.1 zweryfikować testem Shapiro-Wilka hipotezę o normalności rozkładu
+badanej cechy X w populacji generalnej.
+
 Rozwiązanie:
 H0:
     cecha X
@@ -172,15 +194,19 @@ H0:
 H1:
     rozkład cechy X
     różni się od rozkładu normalnego
+
 ```{r}
-x <- c(12.4, 14.2, 14.9, 15.6, 16.1, 16.8, 17.3, 17.9, 18.2, 18.6, 19.3, 19.7, 20.4, 21.9, 22.8, 23.7, 25.2, 25.9, 27.4)
+x <- c(
+    12.4, 14.2, 14.9, 15.6, 16.1, 16.8, 17.3, 17.9, 18.2, 18.6,
+    19.3, 19.7, 20.4, 21.9, 22.8, 23.7, 25.2, 25.9, 27.4
+)
 shapiro.test(x)
 ```
 P-value z testu Shapiro-Wilka wynosi 0.8074, jest znacznie większe od poziomu istotności, 
 więc nie ma podstaw do odrzucenia hipotezy zerowej. Według testu Shapiro-Wilka, badana cecha X
 ma rozkład normalny.
 
-Zadanie 9
+### Zadanie 9
 Korzystając ze zbioru danych iris sprawdź, czy zmienna Sepal.Length ma rozkład normalny.
 Następnie przeprowadź testy osobno dla każdego gatunku kwiatów. Przyjmij poziom istotności 0.05.
 $H_0$: Sepal.Length ma rozkład normalny
@@ -196,6 +222,6 @@ if (!require(dplyr)) {
 }
 library(dplyr)
 iris %>%
-    group_by(Species) %>% # group_by(iris, Species)
-    shapiro_test(Sepal.Length) # rozkłady w grupach są normalne
-``` # TODO NOT WORKING
+    group_by(Species) %>%
+    shapiro_test(Sepal.Length)
+``` 

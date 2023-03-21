@@ -1,4 +1,4 @@
-# Parametry rozkładu
+# Wskaźniki położenia
 
 ## ŚREDNIA
 1. Policzyć średni wiek w pewnej rodzinie: dziadek 82 lata, babcia 74 lata, ojciec 47 lat,
@@ -88,13 +88,6 @@ mean(variances)
 mean(standard_deviations)
 ```
 
-7. c) Lekkoatleta A na zawodach w całym sezonie uzyskał w skoku w dal następujące wyniki w metrach:
-6.82, 6.96, 7.23, 7.05, 7.80, 7.55. Lekkoatleta B, startujący w tych samych zawodach,
-uzyskał takie wyniki, że ich średnia arytmetyczna wyniosła 7.50m, a suma ich kwadratów 340 m2.
-Który z tych lekkoatletów osiągał regularniejsze wyniki?
-```{r}
-```
-
 ## WSPÓŁCZYNNIK ZMIENNOŚCI
 8. a) Załóżmy, że mamy do wyboru dwa typy akcji, w które możemy zainwestować: A i B.
 Dla pierwszej z nich średni zysk z ostatniego okresu wyniósł 7.6, a odchylenie 3.2.
@@ -145,7 +138,6 @@ grupa3_long <- rep(czas_reakcji, times = grupa3)
 
 ## KURTOZA
 10. Wyznaczyć i porównać koncentracje utargów w dwóch sieciach sklepów. Dane znajdują się w tabeli.
-
 Utarg	Liczba sklepów sieci A	Liczba sklepów sieci B
 2-4	4	45
 4-6	10	5

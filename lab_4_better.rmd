@@ -1,0 +1,22 @@
+Wykonaj analizę wariancji w podobny sposób jak powyżej dla zbioru PlantGrowth.
+Zbiór ten zawiera wagi plonów (weight) w podziale na trzy różne grupy (group).
+Zbadać, czy pojawiają się istotne różnice pomiędzy średnią wagą plonów w grupach,
+a jeśli tak, to określić, które grupy się różnią. Przedstawić różnice na wykresie.
+```{r}
+# if (!require("agricolae")) install.packages("agricolae")
+library("agricolae")
+# if (!require("tidyverse")) install.packages("tidyverse")
+library("tidyverse")
+
+library("ggplot2")
+library("rstatix")
+PlantGrowth
+
+ggplot(PlantGrowth, aes(x = group, y = weight)) +
+    geom_boxplot()
+
+# shapiro test
+PlantGrowth %>%
+    group_by(group) %>%
+    rstatix::shapiro_test(weight)
+```

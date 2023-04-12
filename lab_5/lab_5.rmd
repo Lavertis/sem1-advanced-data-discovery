@@ -1,0 +1,13 @@
+```{r}
+head(airquality)
+library(janitor)
+airquality %>% remove_empty("rows")
+summary(airquality)
+airquality[!complete.cases(airquality),] %>% head()
+airquality <- na.omit(airquality)
+airquality
+```
+```{r}
+file_path <- file.path(getwd(), "lab_5/dane/Students_Performance_knn.csv")
+imported <- read.table(file_path, header = TRUE)
+```

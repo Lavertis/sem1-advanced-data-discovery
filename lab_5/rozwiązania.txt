@@ -1,0 +1,42 @@
+head(airquality)
+str(airquality)
+dim(airquality) # zbiór ma 153 wiersze i 6 kolumn
+library(tidyverse)
+glimpse(airquality)
+# analiza występowania braków danych
+colSums(is.na(airquality))
+colSums(is.na(airquality))/nrow(airquality)*100
+library(DMwR2)
+manyNAs(airquality) # wiersze o indeksach 5 i 27 mają co najmniej 20% braków
+library(mice)
+md.pattern(airquality, rotate.names=TRUE)
+# 111 obserwacji jest kompletnych
+# 35 wierszy z brakami w Ozone, 5 wierszy z brakami w Solar.R
+# 2 wiersze z brakami w obu kolumnach
+# łącznie 44 braki w tabeli
+
+# metody uzupełniania braków danych:
+
+# usunięcie wiersza z jakimkolwiek brakiem
+air_omit <- na.omit(airquality)
+dim(air_omit) # 111 wierszy i 6 kolumn
+# uzupełnienie średnią
+air_mean <- airquality
+air_mean[is.na(air_mean$Ozone), "Ozone"] <- mean(air_mean$Ozone, na.rm = T)
+air_mean[is.na(air_mean$Solar.R), "Solar.R"] <- mean(air_mean$Solar.R, na.rm = T)
+dim(air_mean)
+sum(is.na(air_mean))
+# uzupełnienie medianą - jak wyżej tylko zamiast mean jest median
+air_median <- airquality
+air_median[is.na(air_median$Ozone), "Ozone"] <- median(air_median$Ozone, na.rm = T)
+air_median[is.na(air_median$Solar.R), "Solar.R"] <- median(air_median$Solar.R, na.rm = T)
+dim(air_median)
+sum(is.na(air_median))
+# central Imputation
+library(DMwR2)
+air_central <- centralImputation(airquality)
+sum(air_central==air_median) # te same zbiory
+# knn Imputation
+air_knn <-  knnImputation(airquality, k = 5, scale = F, meth = "median")
+sum(is.na(air_knn))
+

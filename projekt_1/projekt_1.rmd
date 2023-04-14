@@ -1,0 +1,42 @@
+---
+title: "Analiza przeżycia pasażerów Titanica"
+author: "Rafał Kuźmiczuk"
+---
+Wstęp
+-----------------------------------------------------------
+Projekt ma na celu analizę danych dotyczących przeżycia pasażerów Titanica.
+Dane zostały pobrane z serwisu Kaggle ([link](https://www.kaggle.com/c/titanic/data)).
+Zbiór danych zawiera informacje o pasażerach Titanica wraz z informacją o tym, czy udało im się przeżyć.
+![](https://i.imgur.com/nRh1GdK.jpeg)
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+library(mice)
+library(dplyr)
+library(DMwR2)
+
+file_name <- "titanic.csv"
+file_path <- if (file.exists("projekt_1")) "projekt_1/src/" else "src/"
+df <- read.csv(paste0(file_path, file_name), header = TRUE, encoding = "UTF-8")
+
+# change "Survived" column values 1 to "Yes" and 0 to "No"
+df$Survived <- ifelse(df$Survived == 1, "Yes", "No")
+
+# change "Pclass" column values 1 to "1st", 2 to "2nd" and 3 to "3rd"
+df$Pclass <- ifelse(df$Pclass == 1, "1st", ifelse(df$Pclass == 2, "2nd", "3rd"))
+
+# Replace 20% of values with NA for each column in cols array
+cols <- c("Survived", "Pclass", "Embarked")
+missing_percentage <- 0.1
+for (col in cols) {
+  df[, col][sample(nrow(df), missing_percentage * nrow(df))] <- NA
+}
+
+# Convert "Survived" and "Pclass" columns to factors
+df <- df %>% mutate_if(is.character, as.factor)
+
+md.pattern(df, rotate.names = TRUE)
+
+# Impute missing values using knnImputation
+df_imputed <- knnImputation(df, k = 5, scale = FALSE, meth = "median")
+
+md.pattern(df_imputed, rotate.names = TRUE)
+```

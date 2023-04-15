@@ -8,6 +8,27 @@ Projekt ma na celu analizę danych dotyczących przeżycia pasażerów Titanica.
 Dane zostały pobrane z serwisu Kaggle ([link](https://www.kaggle.com/c/titanic/data)).
 Zbiór danych zawiera informacje o pasażerach Titanica wraz z informacją o tym, czy udało im się przeżyć.
 ![](https://i.imgur.com/nRh1GdK.jpeg)
+
+Zmienne występujące w zbiorze danych:
+
+* **PassengerId** - identyfikator pasażera
+* **Survived** - czy pasażer przeżył (0 - nie, 1 - tak)
+* **Pclass** - klasa biletu (1 - pierwsza, 2 - druga, 3 - trzecia)
+* **Name** - imię i nazwisko pasażera
+* **Sex** - płeć pasażera
+* **Age** - wiek pasażera
+* **SibSp** - liczba rodzeństwa i małżonków pasażera na pokładzie
+* **Parch** - liczba rodziców i dzieci pasażera na pokładzie
+* **Ticket** - numer biletu
+* **Fare** - cena biletu
+* **Cabin** - numer kabiny pasażera
+* **Embarked** - port, z którego pasażer wsiadł na pokład (C - Cherbourg, Q - Queenstown, S - Southampton)
+
+Po wybraniu istotnych zmiennych zostały podzielone na dwie grupy:
+
+* **Zmienne liczbowe** - Age, SibSp, Parch, Fare
+* **Zmienne kategoryczne** - Survived, Pclass, Sex, Embarked
+
 ```{r echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
 library(mice)
 library(dplyr)
@@ -17,52 +38,111 @@ library(psych)
 library(ggplot2)
 library(RColorBrewer)
 library(gridExtra)
+library(ggmice)
 
 file_name <- "titanic.csv"
 file_path <- if (file.exists("projekt_1")) "projekt_1/src/" else "src/"
 df <- read.csv(paste0(file_path, file_name), header = TRUE, encoding = "UTF-8")
 
-scalar_columns <- c("Age", "SibSp", "Parch", "Fare")
+# remove "PassengerId", "Name", "Ticket", "Cabin" columns using column names
+df <- df[, !(names(df) %in% c("PassengerId", "Name", "Ticket", "Cabin"))]
+
+scalar_columns <- c("Age", "Fare", "SibSp", "Parch")
 categorical_columns <- c("Survived", "Pclass", "Sex", "Embarked")
 
 # change "Survived" column values 1 to "Yes" and 0 to "No"
 df$Survived <- ifelse(df$Survived == 1, "Yes", "No")
-
 # change "Pclass" column values 1 to "1st", 2 to "2nd" and 3 to "3rd"
 df$Pclass <- ifelse(df$Pclass == 1, "1st", ifelse(df$Pclass == 2, "2nd", "3rd"))
+```
 
-# Replace 20% of values with NA for each column in cols array
+## Przykładowe dane ze zbioru
+```{r echo=FALSE}
+kable(head(df))
+```
+
+## Analiza występujących braków i uzupełnienie ich wybraną metodą/metodami.
+### Przed uzupełnieniem braków
+Zbiór posiada braki danych w kolumnach: Age oraz Cabin.
+W przypadku kolumny Cabin brak danych jest zbyt duży, aby można było go uzupełnić, więc postanowiłem usunąć ją z analizy.
+Kolumna Cabin jest skorelowana z kolumną Pclass, więc ma ona mało wpływu na analizę.
+Zostały dodane również sztuczne braki do kolumn Survived, Pclass i Embarked.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
 cols <- c("Survived", "Pclass", "Embarked")
-missing_percentage <- 0.1
+missing_percentages <- c(0.01, 0.02, 0.03)
 for (col in cols) {
+  missing_percentage <- missing_percentages[cols == col]
   df[, col][sample(nrow(df), missing_percentage * nrow(df))] <- NA
 }
 
 # Convert "Survived" and "Pclass" columns to factors
 df <- df %>% mutate_if(is.character, as.factor)
+plot_pattern(df, rotate = TRUE)
+```
 
-md.pattern(df, rotate.names = TRUE)
 
-# Impute missing values using knnImputation
+
+### Po uzupełnieniu braków
+Do uzupelnienia braków została wykorzystana metoda kNN.
+Wszystkie braki zostały pomyślnie uzupełnione.
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
 df_imputed <- knnImputation(df, k = 5, scale = FALSE, meth = "median")
-
 md.pattern(df_imputed, rotate.names = TRUE)
 ```
+
+## Obliczenie statystyk dla zmiennych numerycznych
+Jak można zauważyć przedstawione zostały takie dane jak:
+minimalna wartość, 1 kwartyl (25%), mediana, średnia, 3 kwartyl (75%) oraz maksymalna wartość.
 ```{r echo=FALSE}
+# move Fare column after Age column
 kable(summary(df_imputed[, scalar_columns]))
-kable(head(df_imputed))
 ```
-```{r echo=FALSE}
-results <- data.frame()
-for (col in scalar_columns) {
-  result <- shapiro.test(df_imputed[, col])
-  is_normal <- ifelse(result$p.value > 0.05, "Tak", "Nie")
-  results <- rbind(results, c(col, result$p.value, is_normal))
+
+
+
+## Porównanie przeżywalności pasażerów klas w zależności od ceny biletu
+Korelacja pomiędzy zmiennymi Pclass i Fare jest umiarkowana i wynosi:
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+df_temp <- df_imputed
+df_temp$Pclass <- as.numeric(df_temp$Pclass)
+cat(cor(df_temp$Pclass, df_temp$Fare))
+
+
+classes <- levels(df_imputed$Pclass)
+plots <- list()
+for (class in classes) {
+  df_class <- df_imputed[df_imputed$Pclass == class,]
+  plot <- ggplot(df_class, aes_string(x = "Survived", y = "Fare")) +
+          geom_boxplot(fill = "lightblue") +
+          labs(title = paste0("Pasażerowie ", substr(class, start = 1, stop = 1), " klasy"), x = "Survived", y = "Fare") +
+          theme_minimal()
+  plots[[class]] <- plot
 }
-colnames(results) <- c("Zmienna", "Wartość p", "Rozkład normalny?")
-kable(results)
+grid.arrange(grobs = plots, ncol = 3)
+
+pclasses <- levels(df_imputed$Pclass)
+plots <- list()
+for (i in seq_along(pclasses)) {
+  pclass <- pclasses[i]
+  df_pclass <- df_imputed[df_imputed$Pclass == pclass,]
+  plot <- ggplot(df_pclass, aes_string(x = "Fare", fill = "Survived")) +
+          geom_histogram(alpha = 0.5, position = "stack") +
+          labs(title = paste0("Pasażerowie ", substr(pclass, start = 1, stop = 1), " klasy"), x = "Fare", y = "Count") +
+          scale_fill_manual(values = c("red", "green")) +
+          theme_minimal()
+  plots[[i]] <- plot
+}
+grid.arrange(grobs = plots, ncol = 3)
+
 ```
-Żadna z zmiennych nie jest rozkładem normalnym, ponieważ p-wartości są mniejsze od 0.05.
+
+W pierwszej klasie różnica pomiędzy ceną biletu a przeżywalnością jest znacząca.
+W drugiej klasie różnica jest mniejsza, a w trzeciej klasie jest niewielka.
+
+
+
+
 ```{r echo=FALSE}
 desc <- describe(df_imputed[, scalar_columns])
 desc_rounded <- round(desc, 2)
@@ -155,3 +235,74 @@ plot6 <- ggplot(df_imputed, aes(x = Parch, y = Fare, color = Survived)) +
 
 grid.arrange(plot1, plot2, plot3, plot4, plot5, plot6, ncol = 2)
 ```
+Ciekawe zależności widać na wykresach:
+
+- Age vs SibSp - im starszy pasażer, tym miał ze sobą mniej rodzeństwa.
+Wielodzietne rodziny miały mniejsze szanse na przeżycie
+- Age vs Parch - im starszy pasażer, tym miał ze sobą mniej rodziców/małżonków.
+Wielodzietne rodziny miały mniejsze szanse na przeżycie
+
+
+
+## Testowanie hipotez
+Ostatnim etapem analizy tego zbioru danych jest wykonanie kilku testów sprawdzających postawione hipotezy.
+```{r echo=FALSE}
+results <- data.frame()
+for (col in scalar_columns) {
+  result <- shapiro.test(df_imputed[, col])
+  is_normal <- ifelse(result$p.value > 0.05, "Tak", "Nie")
+  results <- rbind(results, c(col, result$p.value, is_normal))
+}
+colnames(results) <- c("Zmienna", "Wartość p", "Rozkład normalny?")
+kable(results)
+```
+Żadna z zmiennych nie jest rozkładem normalnym, ponieważ p-wartości są mniejsze od 0.05.
+
+
+
+### 1. Badanie wpływu wieku na to, czy pasażer przeżył katastrofę.
+Pierwszym testem będzie sprawdzenie, czy wiek pasażera ma wpływ na to, czy przeżył katastrofę.
+W tym celu skorzystamy z analizy wariancji (ANOVA).
+
+Przed przystąpieniem do analizy wariancji należy postawić odpowiednie warunki oraz hipotezy,
+które przedstawione zostały poniżej:
+
+* założenia: normalność rozkładu w grupach oraz równe wariancje
+* hipotezy:
+* H0: średnia wieku osób, które przeżyły katastrofę jest równa średniej wieku osób, które zginęły.
+* H1: średnia wieku osób, które przeżyły katastrofę jest różna od średniej wieku osób, które zginęły.
+
+#### Sprawdzenie założeń
+Jak możemy zobaczyć powyżej w tabeli, zmienna Age nie jest rozkładem normalnym.
+W takim przypadku należy zastosować test Kruskala-Wallisa, który jest odpowiednikiem testu ANOVA dla
+zmiennych nieparametrycznych.
+```{r echo=FALSE}
+result <- kruskal.test(Age ~ Survived, data = df_imputed)
+print(result)
+```
+P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.
+Średnia wieku osób, które przeżyły katastrofę jest różna od średniej wieku osób, które zginęły.
+
+
+### 2. Badanie wpływu opłaty za bilet na to, czy pasażer przeżył katastrofę.
+Drugim testem będzie sprawdzenie, czy opłata za bilet ma wpływ na to, czy pasażer przeżył katastrofę.
+W tym celu skorzystamy z analizy wariancji (ANOVA).
+
+Przed przystąpieniem do analizy wariancji należy postawić odpowiednie warunki oraz hipotezy,
+które przedstawione zostały poniżej:
+
+* założenia: normalność rozkładu w grupach oraz równe wariancje
+* hipotezy:
+* H0: średnia opłaty za bilet osób, które przeżyły katastrofę jest równa średniej opłaty za bilet osób, które zginęły.
+* H1: średnia opłaty za bilet osób, które przeżyły katastrofę jest różna od średniej opłaty za bilet osób, które zginęły.
+
+#### Sprawdzenie założeń
+Jak możemy zobaczyć powyżej w tabeli, zmienna Fare nie jest rozkładem normalnym.
+W takim przypadku należy zastosować test Kruskala-Wallisa, który jest odpowiednikiem testu ANOVA dla
+zmiennych nieparametrycznych.
+```{r echo=FALSE}
+result <- kruskal.test(Fare ~ Survived, data = df_imputed)
+print(result)
+```
+P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.
+Średnia opłaty za bilet osób, które przeżyły katastrofę jest różna od średniej opłaty za bilet osób, które zginęły.

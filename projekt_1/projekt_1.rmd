@@ -12,10 +12,18 @@ Zbiór danych zawiera informacje o pasażerach Titanica wraz z informacją o tym
 library(mice)
 library(dplyr)
 library(DMwR2)
+library(knitr)
+library(psych)
+library(ggplot2)
+library(RColorBrewer)
+library(gridExtra)
 
 file_name <- "titanic.csv"
 file_path <- if (file.exists("projekt_1")) "projekt_1/src/" else "src/"
 df <- read.csv(paste0(file_path, file_name), header = TRUE, encoding = "UTF-8")
+
+scalar_columns <- c("Age", "SibSp", "Parch", "Fare")
+categorical_columns <- c("Survived", "Pclass", "Sex", "Embarked")
 
 # change "Survived" column values 1 to "Yes" and 0 to "No"
 df$Survived <- ifelse(df$Survived == 1, "Yes", "No")
@@ -39,4 +47,111 @@ md.pattern(df, rotate.names = TRUE)
 df_imputed <- knnImputation(df, k = 5, scale = FALSE, meth = "median")
 
 md.pattern(df_imputed, rotate.names = TRUE)
+```
+```{r echo=FALSE}
+kable(summary(df_imputed[, scalar_columns]))
+kable(head(df_imputed))
+```
+```{r echo=FALSE}
+results <- data.frame()
+for (col in scalar_columns) {
+  result <- shapiro.test(df_imputed[, col])
+  is_normal <- ifelse(result$p.value > 0.05, "Tak", "Nie")
+  results <- rbind(results, c(col, result$p.value, is_normal))
+}
+colnames(results) <- c("Zmienna", "Wartość p", "Rozkład normalny?")
+kable(results)
+```
+Żadna z zmiennych nie jest rozkładem normalnym, ponieważ p-wartości są mniejsze od 0.05.
+```{r echo=FALSE}
+desc <- describe(df_imputed[, scalar_columns])
+desc_rounded <- round(desc, 2)
+kable(desc_rounded)
+```
+
+
+# Analiza zmiennych kategorycznych
+```{r echo=FALSE, warning=FALSE}
+plots <- list()
+for (i in seq_along(categorical_columns)) {
+  col <- categorical_columns[i]
+  plot <- ggplot(df_imputed, aes_string(x = col, fill = "Survived")) +
+          geom_bar() +
+          labs(title = col, x = col, y = "Count") +
+          theme_minimal()
+  plots[[i]] <- plot
+}
+grid.arrange(grobs = plots, nrow = 2, ncol = 2)
+```
+
+
+# Analiza zmiennych ciągłych
+```{r echo=FALSE}
+# zrób wykresy boxplot dla zmiennych ciągłych
+colors <- brewer.pal(length(categorical_columns), "Set1")
+plots <- list()
+for (i in seq_along(scalar_columns)) {
+  col <- scalar_columns[i]
+  plot <- ggplot(df_imputed, aes_string(x = "Survived", y = col)) +
+          geom_boxplot(fill = colors[i]) +
+          labs(title = col, x = "Survived", y = col) +
+          theme_minimal()
+  plots[[i]] <- plot
+}
+grid.arrange(grobs = plots, nrow = 2, ncol = 2)
+```
+
+# Histogramy dla zmiennych ciągłych
+```{r echo=FALSE, message=FALSE}
+plots <- list()
+for (i in seq_along(scalar_columns)) {
+  col <- scalar_columns[i]
+  plot <- ggplot(df_imputed, aes_string(x = col)) +
+          geom_histogram(fill = colors[i]) +
+          labs(title = col, x = col, y = "Count") +
+          theme_minimal()
+  plots[[i]] <- plot
+}
+grid.arrange(grobs = plots, nrow = 2, ncol = 2)
+```
+
+# Wykresy rozrzutu (scatter) dla interakcji pomiędzy dwoma zmiennymi liczbowymi
+```{r echo=FALSE, message=FALSE}
+plot1 <- ggplot(df_imputed, aes(x = Age, y = Fare, color = Survived)) +
+        geom_point() +
+        stat_smooth(method = lm, se = FALSE) +
+        labs(title = "Age vs. Fare", x = "Age", y = "Fare") +
+        theme_minimal()
+
+plot2 <- ggplot(df_imputed, aes(x = Age, y = SibSp, color = Survived)) +
+        geom_point() +
+        stat_smooth(method = lm, se = FALSE) +
+        labs(title = "Age vs. SibSp", x = "Age", y = "SibSp") +
+        theme_minimal()
+
+plot3 <- ggplot(df_imputed, aes(x = Age, y = Parch, color = Survived)) +
+        geom_point() +
+        stat_smooth(method = lm, se = FALSE) +
+        labs(title = "Age vs. Parch", x = "Age", y = "Parch") +
+        theme_minimal()
+
+plot4 <- ggplot(df_imputed, aes(x = SibSp, y = Parch, color = Survived)) +
+        geom_point() +
+        stat_smooth(method = lm, se = FALSE) +
+        labs(title = "SibSp vs. Parch", x = "SibSp", y = "Parch") +
+        theme_minimal()
+
+plot5 <- ggplot(df_imputed, aes(x = SibSp, y = Fare, color = Survived)) +
+        geom_point() +
+        stat_smooth(method = lm, se = FALSE) +
+        labs(title = "SibSp vs. Fare", x = "SibSp", y = "Fare") +
+        theme_minimal()
+
+plot6 <- ggplot(df_imputed, aes(x = Parch, y = Fare, color = Survived)) +
+        geom_point() +
+        stat_smooth(method = lm, se = FALSE) +
+        labs(title = "Parch vs. Fare", x = "Parch", y = "Fare") +
+        theme_minimal()
+
+grid.arrange(plot1, plot2, plot3, plot4, plot5, plot6, ncol = 2)
 ```

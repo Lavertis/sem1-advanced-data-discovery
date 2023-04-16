@@ -52,11 +52,11 @@ library(gridExtra)
 library(ggmice)
 library(modeest)
 library(moments)
-# library(kableExtra)
+
 
 file_name <- "titanic.csv"
 file_path <- if (file.exists("projekt_1")) "projekt_1/src/" else "src/"
-df <- read.csv(paste0(file_path, file_name), header = TRUE, encoding = "UTF-8")
+df <- read.csv(paste0(file_path, file_name), header = TRUE, encoding = "UTF-8", na.strings = c("", "NA"))
 
 # remove "PassengerId", "Name", "Ticket", "Cabin" columns using column names
 df <- df[, !(names(df) %in% c("PassengerId", "Name", "Ticket", "Cabin"))]
@@ -77,14 +77,15 @@ kable(head(df))
 
 ## Analiza występujących braków i uzupełnienie ich wybraną metodą/metodami.
 ### Przed uzupełnieniem braków
-Zbiór posiada braki danych w kolumnach: Age oraz Cabin.
+Zbiór posiada braki danych w kolumnach: Age, Cabin oraz Embarked.
 W przypadku kolumny Cabin brak danych jest zbyt duży, aby można było go uzupełnić, więc został usunięty z analizy.
 Kolumna Cabin jest również skorelowana z kolumną Pclass, więc miałaby ona niewielki wpływ na analizę.
-Zostały dodane również sztuczne braki do kolumn Survived, Pclass i Embarked.
+Zostały dodane również sztuczne braki do kolumn Survived i Pclass.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
-cols <- c("Survived", "Pclass", "Embarked")
-missing_percentages <- c(0.01, 0.02, 0.03)
+cols <- c("Survived", "Pclass")
+missing_percentages <- c(0.02, 0.03)
+set.seed(1)
 for (col in cols) {
   missing_percentage <- missing_percentages[cols == col]
   df[, col][sample(nrow(df), missing_percentage * nrow(df))] <- NA
@@ -96,9 +97,9 @@ plot_pattern(df, rotate = TRUE)
 ```
 
 Z powyższego wykresu można zauważyć, że braki występują w 4 kolumnach: Survived, Pclass, Embarked oraz Age.
-Łącznie występuje 228 braków danych.
+Łącznie występuje 222 braków danych.
 Najwięcej braków jest w kolumnie Age, bo aż 177.
-Najmniej braków jest w kolumnie Survived, bo tylko 8.
+Najmniej braków jest w kolumnie Embarked, bo tylko 2.
 
 
 
@@ -124,6 +125,12 @@ minimalna wartość, 1 kwartyl (25%), mediana, średnia, 3 kwartyl (75%) oraz ma
 ```{r echo=FALSE}
 kable(summary(df_imputed[, scalar_columns]))
 ```
+
+Z powyższych statystyk można wywnioskować, że:
+
+1. Pasażerowie statku byli dość młodzi. Najmłodszy miał 0.42 roku, a najstarszy 80 lat.
+2. Rozpiętość cen biletów była bardzo duża. Najtańszy bilet kosztował 0, a najdroższy 512.33.
+3. Większość pasażerów podróżowała bez rodzin lub przyjaciół.
 
 ### Z podziałem na uratowane i nieuratowane
 ```{r echo=FALSE}
@@ -175,7 +182,7 @@ survived_values <- unique(df_imputed$Survived)
 ```
 
 #### Statystyki dla zmiennej Age
-```{r echo=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 survivedAgeStats <- data.frame(
         "Survived" = survived_values,
         "Min_Age" = statsBySurvived(survived_values, "min", "Age"),
@@ -193,7 +200,7 @@ kable(survivedAgeStats, booktabs = TRUE)
 
 
 #### Statystyki dla zmiennej Fare
-```{r echo=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 survivedFareStats <- data.frame(
         "Survived" = survived_values,
         "Min_Fare" = statsBySurvived(survived_values, "min", "Fare"),
@@ -210,7 +217,7 @@ kable(survivedFareStats, booktabs = TRUE)
 ```
 
 #### Statystyki dla zmiennej SibSp
-```{r echo=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 survivedSibSpStats <- data.frame(
         "Survived" = survived_values,
         "Min_SibSp" = statsBySurvived(survived_values, "min", "SibSp"),
@@ -227,7 +234,7 @@ kable(survivedSibSpStats, booktabs = TRUE)
 ```
 
 #### Statystyki dla zmiennej Parch
-```{r echo=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 survivedParchStats <- data.frame(
         "Survived" = survived_values,
         "Min_Parch" = statsBySurvived(survived_values, "min", "Parch"),
@@ -243,56 +250,60 @@ survivedParchStats <- data.frame(
 kable(survivedParchStats, booktabs = TRUE)
 ```
 
-## Porównanie przeżywalności pasażerów klas w zależności od ceny biletu
-Korelacja pomiędzy zmiennymi Pclass i Fare jest umiarkowana i wynosi:
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-df_temp <- df_imputed
-df_temp$Pclass <- as.numeric(df_temp$Pclass)
-cat(cor(df_temp$Pclass, df_temp$Fare))
+Z powyższych statystyk można wywnioskować, że:
 
-
-classes <- levels(df_imputed$Pclass)
-plots <- list()
-for (class in classes) {
-  df_class <- df_imputed[df_imputed$Pclass == class,]
-  plot <- ggplot(df_class, aes_string(x = "Survived", y = "Fare")) +
-          geom_boxplot(fill = "lightblue") +
-          labs(title = paste0("Pasażerowie ", substr(class, start = 1, stop = 1), " klasy"), x = "Survived", y = "Fare") +
-          theme_minimal()
-  plots[[class]] <- plot
-}
-grid.arrange(grobs = plots, ncol = 3)
-
-pclasses <- levels(df_imputed$Pclass)
-plots <- list()
-for (i in seq_along(pclasses)) {
-  pclass <- pclasses[i]
-  df_pclass <- df_imputed[df_imputed$Pclass == pclass,]
-  plot <- ggplot(df_pclass, aes_string(x = "Fare", fill = "Survived")) +
-          geom_histogram(alpha = 0.5, position = "stack") +
-          labs(title = paste0("Pasażerowie ", substr(pclass, start = 1, stop = 1), " klasy"), x = "Fare", y = "Count") +
-          scale_fill_manual(values = c("red", "green")) +
-          theme_minimal()
-  plots[[i]] <- plot
-}
-grid.arrange(grobs = plots, ncol = 3)
-
-```
-
-W pierwszej klasie różnica pomiędzy ceną biletu a przeżywalnością jest znacząca.
-W drugiej klasie różnica jest mniejsza, a w trzeciej klasie jest niewielka.
+1. Młodsze osoby miały większe szanse na przeżycie.
+2. Osoby z droższymi biletami miały większe szanse na przeżycie.
+3. Osoby, które podróżowały z większą liczbą rodzeństwa lub małżonków miały mniejsze szanse na przeżycie.
+4. Osoby, które podróżowały z większą liczbą rodziców lub dzieci miały większe szanse na przeżycie.
 
 
 
 
+
+## Interpretacja statystyk dla wybranych zmiennych
 ```{r echo=FALSE}
 desc <- describe(df_imputed[, scalar_columns])
-desc_rounded <- round(desc, 2)
-kable(desc_rounded)
+cv <- round(desc$sd / desc$mean * 100, 2)
+desc_with_cv <- cbind(desc, cv)
+desc_with_cv_rounded <- round(desc_with_cv, 2)
+kable(desc_with_cv_rounded)
 ```
 
+**Skośność (skewness)** to miara asymetrii rozkładu danych.<br/>
+W przypadku zmiennej **Age** skośność wynosi **0.4**, co oznacza, że rozkład jest lekko asymetryczny w prawo.<br/>
+Z kolei zmienna **Fare** ma skośność wynoszącą **4.77**, co oznacza, że rozkład jest bardzo asymetryczny w prawo.
 
-# Analiza zmiennych kategorycznych
+**Kurtoza (kurtosis)** to miara szpiczastości rozkładu danych.<br/>
+Zmienna **Age** ma kurtozę wynoszącą **0.34**, co oznacza, że rozkład jest lekko szpiczasty.<br/>
+Z kolei zmienna **Fare** ma kurtozę wynoszącą **33.12**, co oznacza, że rozkład jest bardzo szpiczasty.
+
+**Współczynnik zmienności** (coefficient of variation) to miara zmienności rozkładu danych względem średniej.<br/>
+Jest obliczany jako iloraz odchylenia standardowego przez średnią, wyrażony w procentach.<br/>
+Dla zmiennej **Age** wynosi on **46%**, a dla zmiennej **Fare** jest to **154%**, co oznacza, że zmienna **Fare** ma
+większą zmienność w stosunku do średniej niż zmienna **Age**.
+Oznacza to, że zmienność (różnorodność) cen biletów jest znacznie większa niż różnorodność wieku pasażerów.
+
+**Odchylenie standardowe** (standard deviation) to miara rozproszenia danych wokół średniej.<br/>
+Dla zmiennej **Age** wynosi **13.77**, a dla zmiennej **Fare** jest to **49.69**.<br/>
+Oznacza to, że rozproszenie wieku pasażerów jest znacznie mniejsze niż rozproszenie cen biletów.
+
+**Porównanie średniej i mediany** pozwala na ocenę symetrii rozkładu danych.<br/>
+Dla zmiennej **Age** średnia wynosi **29.8**, a mediana **28.50**, co oznacza, że rozkład jest zbliżony do
+symetrycznego z lekkim skośnieniem w prawo.<br/>
+Dla zmiennej **Fare** średnia wynosi **32.20**, a mediana **14.45**, co oznacza, że rozkład jest asymetryczny, w kierunku
+wyższych wartości.
+
+### Wnioski
+Statystyki zmiennej **Age** sugerują, że rozkład wieku jest nieco asymetryczny w prawo i umiarkowanie
+szpiczasty, ale wciąż zbliżony do symetrycznego, co oznacza, że większość pasażerów miała podobny wiek.
+
+Statystyki zmiennej **Fare** sugerują,że rozkład cen biletów jest silnie asymetryczny w prawo, bardzo
+szpiczasty i ma większą zmienność względem średniej niż wiek, co oznacza, że ceny biletów różnią się znacznie
+i występuje wiele wartości odstających.
+
+
+## Analiza zmiennych kategorycznych
 ```{r echo=FALSE, warning=FALSE}
 plots <- list()
 for (i in seq_along(categorical_columns)) {
@@ -306,8 +317,24 @@ for (i in seq_along(categorical_columns)) {
 grid.arrange(grobs = plots, nrow = 2, ncol = 2)
 ```
 
+Z wykresu zmiennej **Survived** można wywnioskować, że większość pasażerów nie przeżyła katastrofy.
 
-# Analiza zmiennych ciągłych
+z wykresu zmiennej **Pclass** można wywnioskować, że większość pasażerów podróżowała w klasie 3.
+Z kolei najmniejsza liczba pasażerów podróżowała w klasie 2.
+Można też zauważyć, że większość pasażerów, którzy przeżyli katastrofę, podróżowała w klasie 1,
+ale co ciekawe w klasie 3 przeżyło więcej osób niż w klasie 2, jeśli patrzymy na same liczby, a nie na procent wewnątrz
+danej klasy.
+
+Wykres zmiennej **Sex** pokazuje, że mężczyn było dwukrotnie więcej niż kobiet,
+ale dwukrotnie więcej kobiet przeżyło katastrofę.
+
+Z wykresu zmiennej **Embarked** można wywnioskować, że większość pasażerów wsiadła na pokład w Southampton,
+a najmniejsza liczba pasażerów wsiadła w Cherbourg.
+Można pokusić się o stwierdzenie, że pasażerowie, ktorzy wsiedli na pokład w Cherbourg, mieli większe szanse na
+przeżycie niż pasażerowie, którzy wsiadli w Southampton lub Queenstown.
+
+
+## Analiza zmiennych ciągłych
 ```{r echo=FALSE}
 # zrób wykresy boxplot dla zmiennych ciągłych
 colors <- brewer.pal(length(categorical_columns), "Set1")
@@ -323,7 +350,20 @@ for (i in seq_along(scalar_columns)) {
 grid.arrange(grobs = plots, nrow = 2, ncol = 2)
 ```
 
-# Histogramy dla zmiennych ciągłych
+Z wykresu **Age** można wywnioskować, że starsze osoby miały trochę większe szanse na przeżycie.
+
+Z wykresu **Fare** można wywnioskować, że osoby, które płaciły droższe bilety, miały zauważalnie większe szanse na
+przeżycie.
+
+Na wykresie **SibSp** nie widać istotnych różnic między przeżywalnością osób, które podróżowały z małżonkiem,
+rodzeństwem lub partnerem, a osobami, które podróżowały same.
+
+Na wykresie **Parch** widać zauważalne różnice między przeżywalnością osób, które podróżowały z rodzicami lub dziećmi,
+a osobami, które podróżowały same. Osoby, które podróżowały z rodzicami lub dziećmi miały znacznie większe szanse na
+przeżycie.
+
+
+## Histogramy dla zmiennych ciągłych
 ```{r echo=FALSE, message=FALSE}
 plots <- list()
 for (i in seq_along(scalar_columns)) {
@@ -337,7 +377,17 @@ for (i in seq_along(scalar_columns)) {
 grid.arrange(grobs = plots, nrow = 2, ncol = 2)
 ```
 
-# Wykresy rozrzutu (scatter) dla interakcji pomiędzy dwoma zmiennymi liczbowymi
+Z wykresu **Age** można wywnioskować, że większość osób miała około 20-40 lat.<br/>
+Interesujący jest też duży skok w liczbie osób przed i po 18 rokiem życia.
+
+Z wykresu **Fare** można wywnioskować, że większość osób miała najtańsze bilety.
+
+Z wykresu **SibSp** można wywnioskować, że większość osób podróżowała bez rodzeństwa, małżonka lub partnera.
+
+Z wykresu **Parch** można wywnioskować, że większość osób podróżowała bez rodziców lub dzieci.
+
+
+## Wykresy rozrzutu (scatter) dla interakcji pomiędzy dwoma zmiennymi liczbowymi
 ```{r echo=FALSE, message=FALSE}
 plot1 <- ggplot(df_imputed, aes(x = Age, y = Fare, color = Survived)) +
         geom_point() +
@@ -377,12 +427,65 @@ plot6 <- ggplot(df_imputed, aes(x = Parch, y = Fare, color = Survived)) +
 
 grid.arrange(plot1, plot2, plot3, plot4, plot5, plot6, ncol = 2)
 ```
-Ciekawe zależności widać na wykresach:
 
-- Age vs SibSp - im starszy pasażer, tym miał ze sobą mniej rodzeństwa.
+Na większości wykresów nie widać żadnych zauważalnych zależności między zmiennymi.
+Te, które są widoczne, to:
+
+- **Age** vs **SibSp** - im starszy pasażer, tym miał ze sobą mniej rodzeństwa.
 Wielodzietne rodziny miały mniejsze szanse na przeżycie
-- Age vs Parch - im starszy pasażer, tym miał ze sobą mniej rodziców/małżonków.
+- **Age** vs **Parch** - im starszy pasażer, tym miał ze sobą mniej rodziców/małżonków.
 Wielodzietne rodziny miały mniejsze szanse na przeżycie
+
+
+
+
+
+
+## Porównanie przeżywalności pasażerów klas w zależności od ceny biletu
+W tym punkcie będziemy analizować, czy cena biletu wewnątrz danej klasy miała wpływ na przeżywalność pasażera.
+
+Korelacja pomiędzy zmiennymi Pclass i Fare jest umiarkowana i wynosi:
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+df_temp <- df_imputed
+df_temp$Pclass <- as.numeric(df_temp$Pclass)
+cat(cor(df_temp$Pclass, df_temp$Fare))
+
+
+classes <- levels(df_imputed$Pclass)
+plots <- list()
+for (class in classes) {
+  df_class <- df_imputed[df_imputed$Pclass == class,]
+  plot <- ggplot(df_class, aes_string(x = "Survived", y = "Fare")) +
+          geom_boxplot(fill = "lightblue") +
+          labs(title = paste0("Pasażerowie ", substr(class, start = 1, stop = 1), " klasy"), x = "Survived", y = "Fare") +
+          theme_minimal()
+  plots[[class]] <- plot
+}
+grid.arrange(grobs = plots, ncol = 3)
+
+pclasses <- levels(df_imputed$Pclass)
+plots <- list()
+for (i in seq_along(pclasses)) {
+  pclass <- pclasses[i]
+  df_pclass <- df_imputed[df_imputed$Pclass == pclass,]
+  plot <- ggplot(df_pclass, aes_string(x = "Fare", fill = "Survived")) +
+          geom_histogram(alpha = 0.5, position = "stack") +
+          labs(title = paste0("Pasażerowie ", substr(pclass, start = 1, stop = 1), " klasy"), x = "Fare", y = "Count") +
+          scale_fill_manual(values = c("red", "green")) +
+          theme_minimal()
+  plots[[i]] <- plot
+}
+grid.arrange(grobs = plots, ncol = 3)
+
+```
+
+W pierwszej klasie różnica pomiędzy ceną biletu a przeżywalnością jest znacząca.<br/>
+W drugiej klasie różnica jest mniejsza, a w trzeciej klasie jest niewielka.<br/>
+Różnice w obrębie tych samych klas mogą być spowodowane np. pokładem, w którym podróżował pasażer,
+jeśli klasa rozciągała się na kilka pokładów.
+
+
+
 
 
 
@@ -403,24 +506,25 @@ kable(results)
 
 
 ### 1. Badanie wpływu wieku na to, czy pasażer przeżył katastrofę.
-Pierwszym testem będzie sprawdzenie, czy wiek pasażera ma wpływ na to, czy przeżył katastrofę.
+Pierwszym testem będzie sprawdzenie, czy wiek pasażera ma wpływ na to, czy przeżył katastrofę.<br/>
 Z powyższego testu Shapiro-Wilka wynika, że zmienna Age nie jest rozkładem normalnym, więc nie możemy
-zastosować testów parametrycznych.
-Nie możemy też zastosować testu Kruskala-Wallisa, ponieważ zmienna Survived jest zmienną kategoryczną posiadającą więcej niż 2 wartości.
-W takim przypadku zastosujemy test Wilcoxon-Mann-Whitneya.
+zastosować testów parametrycznych.<br/>
+Nie możemy też zastosować testu Kruskala-Wallisa, ponieważ zmienna Survived jest zmienną kategoryczną posiadającą
+więcej niż 2 wartości.<br/>
+W takim przypadku zastosujemy test Wilcoxon-Mann-Whitneya.<br/>
 Poziom istotności ustalamy na 0.05.
 
 Hipotezy:
 
-* H0: średnia wieku osób, które przeżyły katastrofę jest równa średniej wieku osób, które zginęły.
-* H1: średnia wieku osób, które przeżyły katastrofę jest różna od średniej wieku osób, które zginęły.
+* H0: wiek osób, które przeżyły katastrofę jest równa wieku osób, które zginęły.
+* H1: wiek osób, które przeżyły katastrofę jest różna od wieku osób, które zginęły.
 
 ```{r echo=FALSE}
 result <- wilcox.test(Age ~ Survived, data = df_imputed, alternative = "two.sided")
 result
 ```
-P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.
-Średnia wieku osób, które przeżyły katastrofę jest różna od średniej wieku osób, które zginęły.
+P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.<br/>
+Wiek osób, które przeżyły katastrofę jest różny od wieku osób, które zginęły.
 
 ```{r echo=FALSE}
 ggplot(df_imputed, aes(x = Survived, y = Age, fill = Survived)) +
@@ -428,30 +532,30 @@ ggplot(df_imputed, aes(x = Survived, y = Age, fill = Survived)) +
         labs(title = "Age vs. Survived", x = "Survived", y = "Age") +
         theme_minimal()
 ```
-Wykres boxplot również potwierdza, że średnia wieku osób, które przeżyły katastrofę jest różna od średniej wieku osób,
-które zginęły.
+Wykres boxplot również potwierdza, że wiek osób, które przeżyły katastrofę jest różny od wieku osób, które zginęły.
 P-value jest mniejsze od 0.05, ale nie dużo mniejsze i wykres również pokazuje, że w zasadzie mediana obu grup jest
 bardzo podobna.
 
 ### 2. Badanie wpływu opłaty za bilet na to, czy pasażer przeżył katastrofę.
-Drugim testem będzie sprawdzenie, czy opłata za bilet pasażera ma wpływ na to, czy przeżył katastrofę.
-Z powyższego testu Shapiro-Wilka wynika, że zmienna Fare nie jest rozkładem normalnym, więc nie możemy
-zastosować testów parametrycznych.
-Nie możemy też zastosować testu Kruskala-Wallisa, ponieważ zmienna Survived jest zmienną kategoryczną posiadającą więcej niż 2 wartości.
-W takim przypadku zastosujemy test Wilcoxon-Mann-Whitneya.
+Drugim testem będzie sprawdzenie, czy opłata za bilet pasażera ma wpływ na to, czy przeżył katastrofę.<br/>
+Z testu Shapiro-Wilka wynika, że zmienna Fare nie jest rozkładem normalnym, więc nie możemy zastosować testów
+parametrycznych.<br/>
+Nie możemy też zastosować testu Kruskala-Wallisa, ponieważ zmienna Survived jest zmienną kategoryczną posiadającą
+więcej niż 2 wartości.<br/>
+W takim przypadku zastosujemy test Wilcoxon-Mann-Whitneya.<br/>
 Poziom istotności ustalamy na 0.05.
 
 Hipotezy:
 
-* H0: średnia opłaty za bilet osób, które przeżyły katastrofę jest większa od średniej opłaty za bilet osób, które zginęły.
-* H1: średnia opłaty za bilet osób, które przeżyły katastrofę jest mniejsza od średniej opłaty za bilet osób, które zginęły.
+* H0: opłąta za bilet osób, które przeżyły katastrofę jest większa od opłaty za bilet osób, które zginęły.
+* H1: opłata za bilet osób, które przeżyły katastrofę jest mniejsza od opłaty za bilet osób, które zginęły.
 
 ```{r echo=FALSE}
 result <- wilcox.test(Fare ~ Survived, data = df_imputed, alternative = "less")
 result
 ```
-P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.
-Średnia opłaty za bilet osób, które przeżyły katastrofę jest większa od średniej opłaty za bilet osób, które zginęły.
+P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.<br/>
+Osoby, które przeżyły katastrofę, zapłaciły za bilet więcej niż osoby, które zginęły.<br/>
 P-value jest dużo mniejsze niż 0.05, i widać to też na wykresie - różnica pomiędzy grupami jest znacząca.
 
 ```{r echo=FALSE}
@@ -487,28 +591,27 @@ ggplot(df_imputed, aes(x = Pclass, fill = Survived)) +
         labs(x = "Klasa", y = "Liczba pasażerów", fill = "Przeżył") +
         theme_minimal()
 ```
-Wykres słupkowy również potwierdza, że klasa pasażera ma wpływ na to, czy przeżył katastrofę.
+Wykres słupkowy również potwierdza, że klasa pasażera ma wpływ na to, czy przeżył katastrofę.<br/>
 P-value jest dużo mniejsze niż 0.05, i widać to też na wykresie - różnica pomiędzy grupami jest znacząca.
 
 ### 4. Badanie różnic w wieku w zależności od klasy pasażera.
-Czwartym testem będzie sprawdzenie, czy wiek pasażera ma wpływ na to, czy przeżył katastrofę.
-Z powyższego testu Shapiro-Wilka wynika, że zmienna Age nie jest rozkładem normalnym, więc nie możemy
-zastosować testów parametrycznych.
-Zastosujemy więc test Kruskala-Wallisa.
+Czwartym testem będzie sprawdzenie, czy wiek pasażera ma wpływ na to, w jakiej klasie podróżował.<br/>
+Z powyższego testu Shapiro-Wilka wynika, że zmienna Age nie jest rozkładem normalnym, więc nie możemy zastosować
+testów parametrycznych.<br/>
+Zastosujemy więc test Kruskala-Wallisa.<br/>
 Poziom istotności ustalamy na 0.05.
 
 Hipotezy:
 
-* H0: średnia wieku osób w każdej klasie jest równa.
-* H1: średnia wieku osób w każdej klasie jest różna.
+* H0: wiek osób w każdej klasie jest równy.
+* H1: wiek osób w każdej klasie jest różny.
 
 ```{r echo=FALSE}
 result <- kruskal.test(Age ~ Pclass, data = df_imputed)
 result
 ```
-P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.
-Średnia wieku osób w każdej klasie jest różna.
-
+P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.<br/>
+Wiek osób w każdej klasie jest różny.
 
 ```{r echo=FALSE}
 ggplot(df_imputed, aes(x = Pclass, y = Age, fill = Pclass)) +
@@ -516,5 +619,5 @@ ggplot(df_imputed, aes(x = Pclass, y = Age, fill = Pclass)) +
         labs(x = "Klasa", y = "Wiek", fill = "Klasa") +
         theme_minimal()
 ```
-Wykres boxplot również potwierdza, że wiek osób w każdej klasie jest różny.
+Wykres boxplot również potwierdza, że wiek osób w każdej klasie jest różny.<br/>
 P-value jest dużo mniejsze niż 0.05, i widać to też na wykresie - różnica pomiędzy grupami jest znacząca.

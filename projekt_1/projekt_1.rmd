@@ -24,7 +24,18 @@ Zmienne występujące w zbiorze danych:
 * **Cabin** - numer kabiny pasażera
 * **Embarked** - port, z którego pasażer wsiadł na pokład (C - Cherbourg, Q - Queenstown, S - Southampton)
 
-Po wybraniu istotnych zmiennych zostały podzielone na dwie grupy:
+Zmienne wybrane do analizy:
+
+* **Survived** - czy pasażer przeżył (0 - nie, 1 - tak)
+* **Pclass** - klasa biletu (1st - pierwsza, 2nd - druga, 3rd - trzecia)
+* **Sex** - płeć pasażera
+* **Age** - wiek pasażera
+* **SibSp** - liczba rodzeństwa i małżonków pasażera na pokładzie
+* **Parch** - liczba rodziców i dzieci pasażera na pokładzie
+* **Fare** - cena biletu
+* **Embarked** - port, z którego pasażer wsiadł na pokład (C - Cherbourg, Q - Queenstown, S - Southampton)
+
+Po zmienne zostały podzielone na dwie grupy:
 
 * **Zmienne liczbowe** - Age, SibSp, Parch, Fare
 * **Zmienne kategoryczne** - Survived, Pclass, Sex, Embarked
@@ -39,6 +50,9 @@ library(ggplot2)
 library(RColorBrewer)
 library(gridExtra)
 library(ggmice)
+library(modeest)
+library(moments)
+# library(kableExtra)
 
 file_name <- "titanic.csv"
 file_path <- if (file.exists("projekt_1")) "projekt_1/src/" else "src/"
@@ -64,8 +78,8 @@ kable(head(df))
 ## Analiza występujących braków i uzupełnienie ich wybraną metodą/metodami.
 ### Przed uzupełnieniem braków
 Zbiór posiada braki danych w kolumnach: Age oraz Cabin.
-W przypadku kolumny Cabin brak danych jest zbyt duży, aby można było go uzupełnić, więc postanowiłem usunąć ją z analizy.
-Kolumna Cabin jest skorelowana z kolumną Pclass, więc ma ona mało wpływu na analizę.
+W przypadku kolumny Cabin brak danych jest zbyt duży, aby można było go uzupełnić, więc został usunięty z analizy.
+Kolumna Cabin jest również skorelowana z kolumną Pclass, więc miałaby ona niewielki wpływ na analizę.
 Zostały dodane również sztuczne braki do kolumn Survived, Pclass i Embarked.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
@@ -81,25 +95,153 @@ df <- df %>% mutate_if(is.character, as.factor)
 plot_pattern(df, rotate = TRUE)
 ```
 
+Z powyższego wykresu można zauważyć, że braki występują w 4 kolumnach: Survived, Pclass, Embarked oraz Age.
+Łącznie występuje 228 braków danych.
+Najwięcej braków jest w kolumnie Age, bo aż 177.
+Najmniej braków jest w kolumnie Survived, bo tylko 8.
+
 
 
 ### Po uzupełnieniu braków
-Do uzupelnienia braków została wykorzystana metoda kNN.
-Wszystkie braki zostały pomyślnie uzupełnione.
+Do uzupelnienia braków została wykorzystana metoda kNN, ponieważ jest ona sprawdzona i powszechnie stosowana.
+
 ```{r echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
 df_imputed <- knnImputation(df, k = 5, scale = FALSE, meth = "median")
 md.pattern(df_imputed, rotate.names = TRUE)
 ```
 
+Jak widać na powyższym wykresie, wszystkie braki zostały uzupełnione.
+Na tym etapie zbiór składa się z 891 obserwacji kompletnych obserwacji i jest gotowy do dalszej analizy.
+
+
+
+
 ## Obliczenie statystyk dla zmiennych numerycznych
+
+### Dla całego zbioru
 Jak można zauważyć przedstawione zostały takie dane jak:
 minimalna wartość, 1 kwartyl (25%), mediana, średnia, 3 kwartyl (75%) oraz maksymalna wartość.
 ```{r echo=FALSE}
-# move Fare column after Age column
 kable(summary(df_imputed[, scalar_columns]))
 ```
 
+### Z podziałem na uratowane i nieuratowane
+```{r echo=FALSE}
+statsBySurvived <- function(v, stat, col) {
+  m <- c()
+  for (i in seq_along(v)) {
+    if (stat == "min") {
+      m[i] <- min(df_imputed[df_imputed$Survived == v[i], col])
+    }
+    if (stat == "max") {
+      m[i] <- max(df_imputed[df_imputed$Survived == v[i], col])
+    }
+    if (stat == "mean") {
+      m[i] <- mean(df_imputed[df_imputed$Survived == v[i], col])
+    }
+    if (stat == "median") {
+      m[i] <- median(df_imputed[df_imputed$Survived == v[i], col])
+    }
+    if (stat == "dom") {
+      m[i] <- mlv(df_imputed[df_imputed$Survived == v[i], col], method = "mfv")
+    }
+    if (stat == "sd") {
+      m[i] <- sd(df_imputed[df_imputed$Survived == v[i], col])
+    }
+    if (stat == "quant25") {
+      m[i] <- quantile(df_imputed[df_imputed$Survived == v[i], col], probs = c(0.25))
+    }
+    if (stat == "quant75") {
+      m[i] <- quantile(df_imputed[df_imputed$Survived == v[i], col], probs = c(0.75))
+    }
+    if (stat == "var") {
+      m[i] <- var(rnorm(df_imputed[df_imputed$Survived == v[i], col]))
+    }
+    if (stat == "cov") {
+      m[i] <- sd(df_imputed[df_imputed$Survived == v[i], col]) / mean(df_imputed[df_imputed$Survived == v[i], col]) * 100
+    }
+    if (stat == "skewness") {
+      m[i] <- skewness(df_imputed[df_imputed$Survived == v[i], col])
+    }
+    if (stat == "kurtosis") {
+      m[i] <- kurtosis(df_imputed[df_imputed$Survived == v[i], col])
+    }
+  }
+  return(m)
+}
 
+survived_values <- unique(df_imputed$Survived)
+
+```
+
+#### Statystyki dla zmiennej Age
+```{r echo=FALSE}
+survivedAgeStats <- data.frame(
+        "Survived" = survived_values,
+        "Min_Age" = statsBySurvived(survived_values, "min", "Age"),
+        "Age_Mean" = statsBySurvived(survived_values, "mean", "Age"),
+        "Age_Dominant" = statsBySurvived(survived_values, "dom", "Age"),
+        "Age_Median" = statsBySurvived(survived_values, "median", "Age"),
+        "Age_Quant25" = statsBySurvived(survived_values, "quant25", "Age"),
+        "Age_Quant75" = statsBySurvived(survived_values, "quant75", "Age"),
+        "Max_Age" = statsBySurvived(survived_values, "max", "Age"),
+        "Count" = sapply(survived_values, function(x) sum(df_imputed$Survived == x))
+)
+
+kable(survivedAgeStats, booktabs = TRUE)
+```
+
+
+#### Statystyki dla zmiennej Fare
+```{r echo=FALSE}
+survivedFareStats <- data.frame(
+        "Survived" = survived_values,
+        "Min_Fare" = statsBySurvived(survived_values, "min", "Fare"),
+        "Fare_Mean" = statsBySurvived(survived_values, "mean", "Fare"),
+        "Fare_Dominant" = statsBySurvived(survived_values, "dom", "Fare"),
+        "Fare_Median" = statsBySurvived(survived_values, "median", "Fare"),
+        "Fare_Quant25" = statsBySurvived(survived_values, "quant25", "Fare"),
+        "Fare_Quant75" = statsBySurvived(survived_values, "quant75", "Fare"),
+        "Max_Fare" = statsBySurvived(survived_values, "max", "Fare"),
+        "Count" = sapply(survived_values, function(x) sum(df_imputed$Survived == x))
+)
+
+kable(survivedFareStats, booktabs = TRUE)
+```
+
+#### Statystyki dla zmiennej SibSp
+```{r echo=FALSE}
+survivedSibSpStats <- data.frame(
+        "Survived" = survived_values,
+        "Min_SibSp" = statsBySurvived(survived_values, "min", "SibSp"),
+        "SibSp_Mean" = statsBySurvived(survived_values, "mean", "SibSp"),
+        "SibSp_Dominant" = statsBySurvived(survived_values, "dom", "SibSp"),
+        "SibSp_Median" = statsBySurvived(survived_values, "median", "SibSp"),
+        "SibSp_Quant25" = statsBySurvived(survived_values, "quant25", "SibSp"),
+        "SibSp_Quant75" = statsBySurvived(survived_values, "quant75", "SibSp"),
+        "Max_SibSp" = statsBySurvived(survived_values, "max", "SibSp"),
+        "Count" = sapply(survived_values, function(x) sum(df_imputed$Survived == x))
+)
+
+kable(survivedSibSpStats, booktabs = TRUE)
+```
+
+#### Statystyki dla zmiennej Parch
+```{r echo=FALSE}
+survivedParchStats <- data.frame(
+        "Survived" = survived_values,
+        "Min_Parch" = statsBySurvived(survived_values, "min", "Parch"),
+        "Parch_Mean" = statsBySurvived(survived_values, "mean", "Parch"),
+        "Parch_Dominant" = statsBySurvived(survived_values, "dom", "Parch"),
+        "Parch_Median" = statsBySurvived(survived_values, "median", "Parch"),
+        "Parch_Quant25" = statsBySurvived(survived_values, "quant25", "Parch"),
+        "Parch_Quant75" = statsBySurvived(survived_values, "quant75", "Parch"),
+        "Max_Parch" = statsBySurvived(survived_values, "max", "Parch"),
+        "Count" = sapply(survived_values, function(x) sum(df_imputed$Survived == x))
+)
+
+kable(survivedParchStats, booktabs = TRUE)
+```
 
 ## Porównanie przeżywalności pasażerów klas w zależności od ceny biletu
 Korelacja pomiędzy zmiennymi Pclass i Fare jest umiarkowana i wynosi:
@@ -253,56 +395,50 @@ for (col in scalar_columns) {
   is_normal <- ifelse(result$p.value > 0.05, "Tak", "Nie")
   results <- rbind(results, c(col, result$p.value, is_normal))
 }
-colnames(results) <- c("Zmienna", "Wartość p", "Rozkład normalny?")
+colnames(results) <- c("Zmienna", "p-value", "Rozkład normalny?")
 kable(results)
 ```
-Żadna z zmiennych nie jest rozkładem normalnym, ponieważ p-wartości są mniejsze od 0.05.
+Żadna ze zmiennych nie ma rozkładu normalnego, ponieważ p-wartości są mniejsze od 0.05.
 
 
 
 ### 1. Badanie wpływu wieku na to, czy pasażer przeżył katastrofę.
 Pierwszym testem będzie sprawdzenie, czy wiek pasażera ma wpływ na to, czy przeżył katastrofę.
-W tym celu skorzystamy z analizy wariancji (ANOVA).
+Z powyższego testu Shapiro-Wilka wynika, że zmienna Age nie jest rozkładem normalnym, więc nie możemy
+zastosować testów parametrycznych.
+Nie możemy też zastosować testu Kruskala-Wallisa, ponieważ zmienna Survived jest zmienną kategoryczną posiadającą więcej niż 2 wartości.
+W takim przypadku zastosujemy test Wilcoxon-Mann-Whitneya.
+Współczynnik ufności ustalamy na 0.05.
 
-Przed przystąpieniem do analizy wariancji należy postawić odpowiednie warunki oraz hipotezy,
-które przedstawione zostały poniżej:
+Hipotezy:
 
-* założenia: normalność rozkładu w grupach oraz równe wariancje
-* hipotezy:
 * H0: średnia wieku osób, które przeżyły katastrofę jest równa średniej wieku osób, które zginęły.
 * H1: średnia wieku osób, które przeżyły katastrofę jest różna od średniej wieku osób, które zginęły.
 
-#### Sprawdzenie założeń
-Jak możemy zobaczyć powyżej w tabeli, zmienna Age nie jest rozkładem normalnym.
-W takim przypadku należy zastosować test Kruskala-Wallisa, który jest odpowiednikiem testu ANOVA dla
-zmiennych nieparametrycznych.
 ```{r echo=FALSE}
-result <- kruskal.test(Age ~ Survived, data = df_imputed)
-print(result)
+result <- wilcox.test(Age ~ Survived, data = df_imputed, alternative = "two.sided")
+result
 ```
 P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.
 Średnia wieku osób, które przeżyły katastrofę jest różna od średniej wieku osób, które zginęły.
 
 
 ### 2. Badanie wpływu opłaty za bilet na to, czy pasażer przeżył katastrofę.
-Drugim testem będzie sprawdzenie, czy opłata za bilet ma wpływ na to, czy pasażer przeżył katastrofę.
-W tym celu skorzystamy z analizy wariancji (ANOVA).
+Drugim testem będzie sprawdzenie, czy opłata za bilet pasażera ma wpływ na to, czy przeżył katastrofę.
+Z powyższego testu Shapiro-Wilka wynika, że zmienna Fare nie jest rozkładem normalnym, więc nie możemy
+zastosować testów parametrycznych.
+Nie możemy też zastosować testu Kruskala-Wallisa, ponieważ zmienna Survived jest zmienną kategoryczną posiadającą więcej niż 2 wartości.
+W takim przypadku zastosujemy test Wilcoxon-Mann-Whitneya.
+Współczynnik ufności ustalamy na 0.05.
 
-Przed przystąpieniem do analizy wariancji należy postawić odpowiednie warunki oraz hipotezy,
-które przedstawione zostały poniżej:
+Hipotezy:
 
-* założenia: normalność rozkładu w grupach oraz równe wariancje
-* hipotezy:
-* H0: średnia opłaty za bilet osób, które przeżyły katastrofę jest równa średniej opłaty za bilet osób, które zginęły.
-* H1: średnia opłaty za bilet osób, które przeżyły katastrofę jest różna od średniej opłaty za bilet osób, które zginęły.
+* H0: średnia opłaty za bilet osób, które przeżyły katastrofę jest większa od średniej opłaty za bilet osób, które zginęły.
+* H1: średnia opłaty za bilet osób, które przeżyły katastrofę jest mniejsza od średniej opłaty za bilet osób, które zginęły.
 
-#### Sprawdzenie założeń
-Jak możemy zobaczyć powyżej w tabeli, zmienna Fare nie jest rozkładem normalnym.
-W takim przypadku należy zastosować test Kruskala-Wallisa, który jest odpowiednikiem testu ANOVA dla
-zmiennych nieparametrycznych.
 ```{r echo=FALSE}
-result <- kruskal.test(Fare ~ Survived, data = df_imputed)
-print(result)
+result <- wilcox.test(Fare ~ Survived, data = df_imputed, alternative = "less")
+result
 ```
 P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.
-Średnia opłaty za bilet osób, które przeżyły katastrofę jest różna od średniej opłaty za bilet osób, które zginęły.
+Średnia opłaty za bilet osób, które przeżyły katastrofę jest większa od średniej opłaty za bilet osób, które zginęły.

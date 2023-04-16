@@ -51,7 +51,6 @@ library(RColorBrewer)
 library(gridExtra)
 library(ggmice)
 library(modeest)
-library(moments)
 
 
 file_name <- "titanic.csv"

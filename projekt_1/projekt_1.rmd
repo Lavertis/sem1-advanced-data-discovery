@@ -1,6 +1,7 @@
 ---
 title: "Analiza przeżycia pasażerów Titanica"
 author: "Rafał Kuźmiczuk"
+date: "16 kwietnia 2023"
 ---
 Wstęp
 -----------------------------------------------------------
@@ -39,6 +40,14 @@ Po zmienne zostały podzielone na dwie grupy:
 
 * **Zmienne liczbowe** - Age, SibSp, Parch, Fare
 * **Zmienne kategoryczne** - Survived, Pclass, Sex, Embarked
+
+```{css echo=FALSE}
+img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+```
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
 library(mice)
@@ -95,9 +104,9 @@ df <- df %>% mutate_if(is.character, as.factor)
 plot_pattern(df, rotate = TRUE)
 ```
 
-Z powyższego wykresu można zauważyć, że braki występują w 4 kolumnach: Survived, Pclass, Embarked oraz Age.
-Łącznie występuje 222 braków danych.
-Najwięcej braków jest w kolumnie Age, bo aż 177.
+Z powyższego wykresu można zauważyć, że braki występują w 4 kolumnach: Survived, Pclass, Embarked oraz Age.<br/>
+Łącznie występuje 222 braków danych.<br/>
+Najwięcej braków jest w kolumnie Age, bo aż 177.<br/>
 Najmniej braków jest w kolumnie Embarked, bo tylko 2.
 
 
@@ -110,7 +119,7 @@ df_imputed <- knnImputation(df, k = 5, scale = FALSE, meth = "median")
 md.pattern(df_imputed, rotate.names = TRUE)
 ```
 
-Jak widać na powyższym wykresie, wszystkie braki zostały uzupełnione.
+Jak widać na powyższym wykresie, wszystkie braki zostały uzupełnione.<br/>
 Na tym etapie zbiór składa się z 891 obserwacji kompletnych obserwacji i jest gotowy do dalszej analizy.
 
 
@@ -303,7 +312,7 @@ i występuje wiele wartości odstających.
 
 
 ## Analiza zmiennych kategorycznych
-```{r echo=FALSE, warning=FALSE}
+```{r echo=FALSE, warning=FALSE, fig.width=8, fig.height=6}
 plots <- list()
 for (i in seq_along(categorical_columns)) {
   col <- categorical_columns[i]
@@ -334,7 +343,7 @@ przeżycie niż pasażerowie, którzy wsiadli w Southampton lub Queenstown.
 
 
 ## Analiza zmiennych ciągłych
-```{r echo=FALSE}
+```{r echo=FALSE, fig.width=8, fig.height=6}
 # zrób wykresy boxplot dla zmiennych ciągłych
 colors <- brewer.pal(length(categorical_columns), "Set1")
 plots <- list()
@@ -387,7 +396,7 @@ Z wykresu **Parch** można wywnioskować, że większość osób podróżowała 
 
 
 ## Wykresy rozrzutu (scatter) dla interakcji pomiędzy dwoma zmiennymi liczbowymi
-```{r echo=FALSE, message=FALSE}
+```{r echo=FALSE, message=FALSE, fig.width=8, fig.height=6}
 plot1 <- ggplot(df_imputed, aes(x = Age, y = Fare, color = Survived)) +
         geom_point() +
         stat_smooth(method = lm, se = FALSE) +
@@ -444,7 +453,7 @@ Wielodzietne rodziny miały mniejsze szanse na przeżycie
 W tym punkcie będziemy analizować, czy cena biletu wewnątrz danej klasy miała wpływ na przeżywalność pasażera.
 
 Korelacja pomiędzy zmiennymi Pclass i Fare jest umiarkowana i wynosi:
-```{r echo=FALSE, warning=FALSE, message=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.width=9, fig.height=5}
 df_temp <- df_imputed
 df_temp$Pclass <- as.numeric(df_temp$Pclass)
 cat(cor(df_temp$Pclass, df_temp$Fare))
@@ -461,7 +470,9 @@ for (class in classes) {
   plots[[class]] <- plot
 }
 grid.arrange(grobs = plots, ncol = 3)
+```
 
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.width=9, fig.height=4}
 pclasses <- levels(df_imputed$Pclass)
 plots <- list()
 for (i in seq_along(pclasses)) {
@@ -475,7 +486,6 @@ for (i in seq_along(pclasses)) {
   plots[[i]] <- plot
 }
 grid.arrange(grobs = plots, ncol = 3)
-
 ```
 
 W pierwszej klasie różnica pomiędzy ceną biletu a przeżywalnością jest znacząca.<br/>
@@ -500,7 +510,7 @@ for (col in scalar_columns) {
 colnames(results) <- c("Zmienna", "p-value", "Rozkład normalny?")
 kable(results)
 ```
-Żadna ze zmiennych nie ma rozkładu normalnego, ponieważ p-wartości są mniejsze od 0.05.
+Żadna ze zmiennych liczbowych nie ma rozkładu normalnego, ponieważ p-wartości są mniejsze od 0.05.
 
 
 
@@ -634,4 +644,5 @@ za bilet więcej niż osoby, które zginęły.<br/>
 Klasa pasażera ma wpływ na to, czy przeżył katastrofę, ponieważ osoby podróżujące w klasie wyższej miały większe
 szanse na przeżycie.<br/>
 Płeć pasażera ma wpływ na to, czy przeżył katastrofę, ponieważ kobiety miały większe szanse na przeżycie.<br/>
-Wiek pasażera ma wpływ na to, w jakiej klasie podróżował, ponieważ osoby starsze podróżowały w klasie wyższej.<br/>
+Wiek pasażera ma wpływ na to, w jakiej klasie podróżował, ponieważ osoby starsze podróżowały w klasie wyższej.
+<br/><br/>

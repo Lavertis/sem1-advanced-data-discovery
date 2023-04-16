@@ -408,7 +408,7 @@ Z powyższego testu Shapiro-Wilka wynika, że zmienna Age nie jest rozkładem no
 zastosować testów parametrycznych.
 Nie możemy też zastosować testu Kruskala-Wallisa, ponieważ zmienna Survived jest zmienną kategoryczną posiadającą więcej niż 2 wartości.
 W takim przypadku zastosujemy test Wilcoxon-Mann-Whitneya.
-Współczynnik ufności ustalamy na 0.05.
+Poziom istotności ustalamy na 0.05.
 
 Hipotezy:
 
@@ -422,6 +422,16 @@ result
 P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.
 Średnia wieku osób, które przeżyły katastrofę jest różna od średniej wieku osób, które zginęły.
 
+```{r echo=FALSE}
+ggplot(df_imputed, aes(x = Survived, y = Age, fill = Survived)) +
+        geom_boxplot() +
+        labs(title = "Age vs. Survived", x = "Survived", y = "Age") +
+        theme_minimal()
+```
+Wykres boxplot również potwierdza, że średnia wieku osób, które przeżyły katastrofę jest różna od średniej wieku osób,
+które zginęły.
+P-value jest mniejsze od 0.05, ale nie dużo mniejsze i wykres również pokazuje, że w zasadzie mediana obu grup jest
+bardzo podobna.
 
 ### 2. Badanie wpływu opłaty za bilet na to, czy pasażer przeżył katastrofę.
 Drugim testem będzie sprawdzenie, czy opłata za bilet pasażera ma wpływ na to, czy przeżył katastrofę.
@@ -429,7 +439,7 @@ Z powyższego testu Shapiro-Wilka wynika, że zmienna Fare nie jest rozkładem n
 zastosować testów parametrycznych.
 Nie możemy też zastosować testu Kruskala-Wallisa, ponieważ zmienna Survived jest zmienną kategoryczną posiadającą więcej niż 2 wartości.
 W takim przypadku zastosujemy test Wilcoxon-Mann-Whitneya.
-Współczynnik ufności ustalamy na 0.05.
+Poziom istotności ustalamy na 0.05.
 
 Hipotezy:
 
@@ -442,3 +452,69 @@ result
 ```
 P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.
 Średnia opłaty za bilet osób, które przeżyły katastrofę jest większa od średniej opłaty za bilet osób, które zginęły.
+P-value jest dużo mniejsze niż 0.05, i widać to też na wykresie - różnica pomiędzy grupami jest znacząca.
+
+```{r echo=FALSE}
+# zrób wykresy opłaty za bilet w zależności od tego, czy pasażer przeżył katastrofę
+ggplot(df_imputed, aes(x = Survived, y = Fare, fill = Survived)) +
+        geom_boxplot() +
+        labs(title = "Fare vs. Survived", x = "Survived", y = "Fare") +
+        theme_minimal()
+```
+Wykres boxplot również potwierdza, że opłaty za bilet osób, które przeżyły katastrofę były wyższe niż opłaty za bilet
+osób, które zginęły.
+
+### 3. Badanie wpływu klasy na to, czy pasażer przeżył katastrofę.
+Trzecim testem będzie sprawdzenie, czy klasa pasażera ma wpływ na to, czy przeżył katastrofę.
+Użyjemy tutaj testu chi-kwadrat.
+Poziom istotności ustalamy na 0.05.
+
+Hipotezy:
+
+* H0: klasa pasażera nie ma wpływu na to, czy przeżył katastrofę.
+* H1: klasa pasażera ma wpływ na to, czy przeżył katastrofę.
+
+```{r echo=FALSE}
+result <- chisq.test(df_imputed$Pclass, df_imputed$Survived)
+result
+```
+P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.
+Klasa pasażera ma wpływ na to, czy przeżył katastrofę.
+
+```{r echo=FALSE}
+ggplot(df_imputed, aes(x = Pclass, fill = Survived)) +
+        geom_bar(position = "fill") +
+        labs(x = "Klasa", y = "Liczba pasażerów", fill = "Przeżył") +
+        theme_minimal()
+```
+Wykres słupkowy również potwierdza, że klasa pasażera ma wpływ na to, czy przeżył katastrofę.
+P-value jest dużo mniejsze niż 0.05, i widać to też na wykresie - różnica pomiędzy grupami jest znacząca.
+
+### 4. Badanie różnic w wieku w zależności od klasy pasażera.
+Czwartym testem będzie sprawdzenie, czy wiek pasażera ma wpływ na to, czy przeżył katastrofę.
+Z powyższego testu Shapiro-Wilka wynika, że zmienna Age nie jest rozkładem normalnym, więc nie możemy
+zastosować testów parametrycznych.
+Zastosujemy więc test Kruskala-Wallisa.
+Poziom istotności ustalamy na 0.05.
+
+Hipotezy:
+
+* H0: średnia wieku osób w każdej klasie jest równa.
+* H1: średnia wieku osób w każdej klasie jest różna.
+
+```{r echo=FALSE}
+result <- kruskal.test(Age ~ Pclass, data = df_imputed)
+result
+```
+P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.
+Średnia wieku osób w każdej klasie jest różna.
+
+
+```{r echo=FALSE}
+ggplot(df_imputed, aes(x = Pclass, y = Age, fill = Pclass)) +
+        geom_boxplot() +
+        labs(x = "Klasa", y = "Wiek", fill = "Klasa") +
+        theme_minimal()
+```
+Wykres boxplot również potwierdza, że wiek osób w każdej klasie jest różny.
+P-value jest dużo mniejsze niż 0.05, i widać to też na wykresie - różnica pomiędzy grupami jest znacząca.

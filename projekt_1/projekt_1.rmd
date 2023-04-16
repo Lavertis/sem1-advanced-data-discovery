@@ -532,6 +532,7 @@ ggplot(df_imputed, aes(x = Survived, y = Age, fill = Survived)) +
         labs(title = "Age vs. Survived", x = "Survived", y = "Age") +
         theme_minimal()
 ```
+
 Wykres boxplot również potwierdza, że wiek osób, które przeżyły katastrofę jest różny od wieku osób, które zginęły.
 P-value jest mniejsze od 0.05, ale nie dużo mniejsze i wykres również pokazuje, że w zasadzie mediana obu grup jest
 bardzo podobna.
@@ -565,6 +566,7 @@ ggplot(df_imputed, aes(x = Survived, y = Fare, fill = Survived)) +
         labs(title = "Fare vs. Survived", x = "Survived", y = "Fare") +
         theme_minimal()
 ```
+
 Wykres boxplot również potwierdza, że opłaty za bilet osób, które przeżyły katastrofę były wyższe niż opłaty za bilet
 osób, które zginęły.
 
@@ -591,6 +593,7 @@ ggplot(df_imputed, aes(x = Pclass, fill = Survived)) +
         labs(x = "Klasa", y = "Liczba pasażerów", fill = "Przeżył") +
         theme_minimal()
 ```
+
 Wykres słupkowy również potwierdza, że klasa pasażera ma wpływ na to, czy przeżył katastrofę.<br/>
 P-value jest dużo mniejsze niż 0.05, i widać to też na wykresie - różnica pomiędzy grupami jest znacząca.
 
@@ -619,5 +622,17 @@ ggplot(df_imputed, aes(x = Pclass, y = Age, fill = Pclass)) +
         labs(x = "Klasa", y = "Wiek", fill = "Klasa") +
         theme_minimal()
 ```
+
 Wykres boxplot również potwierdza, że wiek osób w każdej klasie jest różny.<br/>
 P-value jest dużo mniejsze niż 0.05, i widać to też na wykresie - różnica pomiędzy grupami jest znacząca.
+
+## Podsumowanie
+Wyniki testów potwierdzają, że wiek, opłata za bilet, klasa pasażera oraz płeć mają wpływ na to, czy pasażer przeżył
+katastrofę.<br/>
+Wiek pasażera ma wpływ na to, czy przeżył katastrofę, ponieważ osoby starsze miały mniejsze szanse na przeżycie.<br/>
+Opłata za bilet pasażera ma wpływ na to, czy przeżył katastrofę, ponieważ osoby, które przeżyły katastrofę, zapłaciły
+za bilet więcej niż osoby, które zginęły.<br/>
+Klasa pasażera ma wpływ na to, czy przeżył katastrofę, ponieważ osoby podróżujące w klasie wyższej miały większe
+szanse na przeżycie.<br/>
+Płeć pasażera ma wpływ na to, czy przeżył katastrofę, ponieważ kobiety miały większe szanse na przeżycie.<br/>
+Wiek pasażera ma wpływ na to, w jakiej klasie podróżował, ponieważ osoby starsze podróżowały w klasie wyższej.<br/>

@@ -71,6 +71,7 @@ df <- df[, !(names(df) %in% c("PassengerId", "Name", "Ticket", "Cabin"))]
 
 scalar_columns <- c("Age", "Fare", "SibSp", "Parch")
 categorical_columns <- c("Survived", "Pclass", "Sex", "Embarked")
+numerically_continuous_columns <- c("Age", "Fare")
 
 # change "Survived" column values 1 to "Yes" and 0 to "No"
 df$Survived <- ifelse(df$Survived == 1, "Yes", "No")
@@ -345,54 +346,43 @@ przeżycie niż pasażerowie, którzy wsiadli w Southampton lub Queenstown.
 ## Analiza zmiennych ciągłych
 ```{r echo=FALSE, fig.width=8, fig.height=6}
 # zrób wykresy boxplot dla zmiennych ciągłych
-colors <- brewer.pal(length(categorical_columns), "Set1")
+colors <- brewer.pal(3, "Set1")
 plots <- list()
-for (i in seq_along(scalar_columns)) {
-  col <- scalar_columns[i]
+for (i in seq_along(numerically_continuous_columns)) {
+  col <- numerically_continuous_columns[i]
   plot <- ggplot(df_imputed, aes_string(x = "Survived", y = col)) +
           geom_boxplot(fill = colors[i]) +
           labs(title = col, x = "Survived", y = col) +
           theme_minimal()
   plots[[i]] <- plot
 }
-grid.arrange(grobs = plots, nrow = 2, ncol = 2)
+grid.arrange(grobs = plots, ncol = 2)
 ```
 
-Z wykresu **Age** można wywnioskować, że starsze osoby miały trochę większe szanse na przeżycie.
+Z wykresu **Age** można wywnioskować, że młodsze osoby miały trochę większe szanse na przeżycie.
 
-Z wykresu **Fare** można wywnioskować, że osoby, które płaciły droższe bilety, miały zauważalnie większe szanse na
-przeżycie.
-
-Na wykresie **SibSp** nie widać istotnych różnic między przeżywalnością osób, które podróżowały z małżonkiem,
-rodzeństwem lub partnerem, a osobami, które podróżowały same.
-
-Na wykresie **Parch** widać zauważalne różnice między przeżywalnością osób, które podróżowały z rodzicami lub dziećmi,
-a osobami, które podróżowały same. Osoby, które podróżowały z rodzicami lub dziećmi miały znacznie większe szanse na
+Z wykresu **Fare** można wywnioskować, że osoby, które zapłaciły za droższe bilety, miały zauważalnie większe szanse na
 przeżycie.
 
 
 ## Histogramy dla zmiennych ciągłych
-```{r echo=FALSE, message=FALSE}
+```{r echo=FALSE, message=FALSE, fig.width=8, fig.height=5}
 plots <- list()
-for (i in seq_along(scalar_columns)) {
-  col <- scalar_columns[i]
+for (i in seq_along(numerically_continuous_columns)) {
+  col <- numerically_continuous_columns[i]
   plot <- ggplot(df_imputed, aes_string(x = col)) +
           geom_histogram(fill = colors[i]) +
           labs(title = col, x = col, y = "Count") +
           theme_minimal()
   plots[[i]] <- plot
 }
-grid.arrange(grobs = plots, nrow = 2, ncol = 2)
+grid.arrange(grobs = plots, ncol = 2)
 ```
 
 Z wykresu **Age** można wywnioskować, że większość osób miała około 20-40 lat.<br/>
 Interesujący jest też duży skok w liczbie osób przed i po 18 rokiem życia.
 
 Z wykresu **Fare** można wywnioskować, że większość osób miała najtańsze bilety.
-
-Z wykresu **SibSp** można wywnioskować, że większość osób podróżowała bez rodzeństwa, małżonka lub partnera.
-
-Z wykresu **Parch** można wywnioskować, że większość osób podróżowała bez rodziców lub dzieci.
 
 
 ## Wykresy rozrzutu (scatter) dla interakcji pomiędzy dwoma zmiennymi liczbowymi
@@ -488,8 +478,10 @@ for (i in seq_along(pclasses)) {
 grid.arrange(grobs = plots, ncol = 3)
 ```
 
-W pierwszej klasie różnica pomiędzy ceną biletu a przeżywalnością jest znacząca.<br/>
-W drugiej klasie różnica jest mniejsza, a w trzeciej klasie jest niewielka.<br/>
+W pierwszej klasie różnica pomiędzy ceną biletu a przeżywalnością jest znacząca.
+
+W drugiej klasie różnica jest mniejsza, a w trzeciej klasie jest niewielka.
+
 Różnice w obrębie tych samych klas mogą być spowodowane np. pokładem, w którym podróżował pasażer,
 jeśli klasa rozciągała się na kilka pokładów.
 

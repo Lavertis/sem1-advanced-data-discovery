@@ -132,14 +132,13 @@ Na tym etapie zbiór składa się z 891 obserwacji kompletnych obserwacji i jest
 Jak można zauważyć przedstawione zostały takie dane jak:
 minimalna wartość, 1 kwartyl (25%), mediana, średnia, 3 kwartyl (75%) oraz maksymalna wartość.
 ```{r echo=FALSE}
-kable(summary(df_imputed[, scalar_columns]))
+kable(summary(df_imputed[, numerically_continuous_columns]))
 ```
 
 Z powyższych statystyk można wywnioskować, że:
 
 1. Pasażerowie statku byli dość młodzi. Najmłodszy miał 0.42 roku, a najstarszy 80 lat.
 2. Rozpiętość cen biletów była bardzo duża. Najtańszy bilet kosztował 0, a najdroższy 512.33.
-3. Większość pasażerów podróżowała bez rodzin lub przyjaciół.
 
 ### Z podziałem na uratowane i nieuratowane
 ```{r echo=FALSE}
@@ -225,54 +224,16 @@ survivedFareStats <- data.frame(
 kable(survivedFareStats, booktabs = TRUE)
 ```
 
-#### Statystyki dla zmiennej SibSp
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-survivedSibSpStats <- data.frame(
-        "Survived" = survived_values,
-        "Min_SibSp" = statsBySurvived(survived_values, "min", "SibSp"),
-        "SibSp_Mean" = statsBySurvived(survived_values, "mean", "SibSp"),
-        "SibSp_Dominant" = statsBySurvived(survived_values, "dom", "SibSp"),
-        "SibSp_Median" = statsBySurvived(survived_values, "median", "SibSp"),
-        "SibSp_Quant25" = statsBySurvived(survived_values, "quant25", "SibSp"),
-        "SibSp_Quant75" = statsBySurvived(survived_values, "quant75", "SibSp"),
-        "Max_SibSp" = statsBySurvived(survived_values, "max", "SibSp"),
-        "Count" = sapply(survived_values, function(x) sum(df_imputed$Survived == x))
-)
-
-kable(survivedSibSpStats, booktabs = TRUE)
-```
-
-#### Statystyki dla zmiennej Parch
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-survivedParchStats <- data.frame(
-        "Survived" = survived_values,
-        "Min_Parch" = statsBySurvived(survived_values, "min", "Parch"),
-        "Parch_Mean" = statsBySurvived(survived_values, "mean", "Parch"),
-        "Parch_Dominant" = statsBySurvived(survived_values, "dom", "Parch"),
-        "Parch_Median" = statsBySurvived(survived_values, "median", "Parch"),
-        "Parch_Quant25" = statsBySurvived(survived_values, "quant25", "Parch"),
-        "Parch_Quant75" = statsBySurvived(survived_values, "quant75", "Parch"),
-        "Max_Parch" = statsBySurvived(survived_values, "max", "Parch"),
-        "Count" = sapply(survived_values, function(x) sum(df_imputed$Survived == x))
-)
-
-kable(survivedParchStats, booktabs = TRUE)
-```
 
 Z powyższych statystyk można wywnioskować, że:
 
 1. Młodsze osoby miały większe szanse na przeżycie.
 2. Osoby z droższymi biletami miały większe szanse na przeżycie.
-3. Osoby, które podróżowały z większą liczbą rodzeństwa lub małżonków miały mniejsze szanse na przeżycie.
-4. Osoby, które podróżowały z większą liczbą rodziców lub dzieci miały większe szanse na przeżycie.
-
-
-
 
 
 ## Interpretacja statystyk dla wybranych zmiennych
 ```{r echo=FALSE}
-desc <- describe(df_imputed[, scalar_columns])
+desc <- describe(df_imputed[, numerically_continuous_columns])
 cv <- round(desc$sd / desc$mean * 100, 2)
 desc_with_cv <- cbind(desc, cv)
 desc_with_cv_rounded <- round(desc_with_cv, 2)
@@ -494,7 +455,7 @@ jeśli klasa rozciągała się na kilka pokładów.
 Ostatnim etapem analizy tego zbioru danych jest wykonanie kilku testów sprawdzających postawione hipotezy.
 ```{r echo=FALSE}
 results <- data.frame()
-for (col in scalar_columns) {
+for (col in numerically_continuous_columns) {
   result <- shapiro.test(df_imputed[, col])
   is_normal <- ifelse(result$p.value > 0.05, "Tak", "Nie")
   results <- rbind(results, c(col, result$p.value, is_normal))
@@ -510,8 +471,8 @@ kable(results)
 Pierwszym testem będzie sprawdzenie, czy wiek pasażera ma wpływ na to, czy przeżył katastrofę.<br/>
 Z powyższego testu Shapiro-Wilka wynika, że zmienna Age nie jest rozkładem normalnym, więc nie możemy
 zastosować testów parametrycznych.<br/>
-Nie możemy też zastosować testu Kruskala-Wallisa, ponieważ zmienna Survived jest zmienną kategoryczną posiadającą
-więcej niż 2 wartości.<br/>
+Nie możemy też zastosować testu Kruskala-Wallisa, ponieważ zmienna Survived jest zmienną kategoryczną mniej niż 3
+wartości.<br/>
 W takim przypadku zastosujemy test Wilcoxon-Mann-Whitneya.<br/>
 Poziom istotności ustalamy na 0.05.
 
@@ -542,8 +503,8 @@ bardzo podobna.
 Drugim testem będzie sprawdzenie, czy opłata za bilet pasażera ma wpływ na to, czy przeżył katastrofę.<br/>
 Z testu Shapiro-Wilka wynika, że zmienna Fare nie jest rozkładem normalnym, więc nie możemy zastosować testów
 parametrycznych.<br/>
-Nie możemy też zastosować testu Kruskala-Wallisa, ponieważ zmienna Survived jest zmienną kategoryczną posiadającą
-więcej niż 2 wartości.<br/>
+Nie możemy też zastosować testu Kruskala-Wallisa, ponieważ zmienna Survived jest zmienną kategoryczną mniej niż 3
+wartości.<br/>
 W takim przypadku zastosujemy test Wilcoxon-Mann-Whitneya.<br/>
 Poziom istotności ustalamy na 0.05.
 
@@ -572,8 +533,8 @@ Wykres boxplot również potwierdza, że opłaty za bilet osób, które przeży�
 osób, które zginęły.
 
 ### 3. Badanie wpływu klasy na to, czy pasażer przeżył katastrofę.
-Trzecim testem będzie sprawdzenie, czy klasa pasażera ma wpływ na to, czy przeżył katastrofę.
-Użyjemy tutaj testu chi-kwadrat.
+Trzecim testem będzie sprawdzenie, czy klasa pasażera ma wpływ na to, czy przeżył katastrofę.<br/>
+Użyjemy tutaj testu chi-kwadrat, ponieważ obie zmienne są zmiennymi kategorycznymi.<br/>
 Poziom istotności ustalamy na 0.05.
 
 Hipotezy:
@@ -581,9 +542,15 @@ Hipotezy:
 * H0: klasa pasażera nie ma wpływu na to, czy przeżył katastrofę.
 * H1: klasa pasażera ma wpływ na to, czy przeżył katastrofę.
 
+Korelacja Pclass i Survived
 ```{r echo=FALSE}
-result <- chisq.test(df_imputed$Pclass, df_imputed$Survived)
-result
+pclass_as_numbers <- as.numeric(df_imputed$Pclass)
+survided_as_numbers <- as.numeric(df_imputed$Survived)
+cor(pclass_as_numbers, survided_as_numbers)
+```
+
+```{r echo=FALSE}
+chisq.test(df_imputed$Pclass, df_imputed$Survived) # TODO użyć testu alternatywnego dla ANOVA zamiast tego
 ```
 P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.
 Klasa pasażera ma wpływ na to, czy przeżył katastrofę.
@@ -611,8 +578,7 @@ Hipotezy:
 * H1: wiek osób w każdej klasie jest różny.
 
 ```{r echo=FALSE}
-result <- kruskal.test(Age ~ Pclass, data = df_imputed)
-result
+kruskal.test(Age ~ Pclass, data = df_imputed)
 ```
 P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.<br/>
 Wiek osób w każdej klasie jest różny.

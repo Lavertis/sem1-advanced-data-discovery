@@ -453,6 +453,11 @@ jeśli klasa rozciągała się na kilka pokładów.
 
 ## Testowanie hipotez
 Ostatnim etapem analizy tego zbioru danych jest wykonanie kilku testów sprawdzających postawione hipotezy.
+Zakładając, że poziom istotności wynosi 0.05 oraz stawiając 2 hipotezy:
+
+* H0 - rozkład badanej cechy jest rozkładem normalnym
+* H1 - rozkład badanej cechy nie jest rozkładem normalnym
+
 ```{r echo=FALSE}
 results <- data.frame()
 for (col in numerically_continuous_columns) {
@@ -463,7 +468,9 @@ for (col in numerically_continuous_columns) {
 colnames(results) <- c("Zmienna", "p-value", "Rozkład normalny?")
 kable(results)
 ```
-Żadna ze zmiennych liczbowych nie ma rozkładu normalnego, ponieważ p-wartości są mniejsze od 0.05.
+
+Jak można zauważyć wartość p w każdym przypadku jest mniejsza od poziomu istotności co oznacza, że odrzucamy hipotezę
+H0 i nie mamy podstaw do odrzucenia hipotezy H2, czyli żadna zmienna nie jest rozkładem normalnym.
 
 
 
@@ -471,22 +478,37 @@ kable(results)
 Pierwszym testem będzie sprawdzenie, czy wiek pasażera ma wpływ na to, czy przeżył katastrofę.<br/>
 Z powyższego testu Shapiro-Wilka wynika, że zmienna Age nie jest rozkładem normalnym, więc nie możemy
 zastosować testów parametrycznych.<br/>
-Nie możemy też zastosować testu Kruskala-Wallisa, ponieważ zmienna Survived jest zmienną kategoryczną mniej niż 3
-wartości.<br/>
-W takim przypadku zastosujemy test Wilcoxon-Mann-Whitneya.<br/>
+Nie zastosujemy też testu Kruskala-Wallisa, ponieważ jest on zalecany dla przynajmniej 3 grup, a zmienna Survived
+posiada tylko 2 możliwe wartości.<br/>
+W takim przypadku zastosujemy test Wilcoxon-Mann-Whitneya, ponieważ mamy jedną zmienną zależną, która jest mierzona na
+poziomie ciągłym lub porządkowym - Age, oraz drugą zmienną niezależną, która składa się z dwóch niezależnych
+kategorycznych grup - Survived (Y/N), a nasze obserwacje są niezależne.<br/>
 Poziom istotności ustalamy na 0.05.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(df_imputed, aes(x = Age, fill = Survived)) +
+        geom_histogram(alpha = 0.5, position = "identity") +
+        labs(title = "Age vs. Survived", x = "Age", y = "Count") +
+        scale_fill_manual(values = c("red", "green")) +
+        theme_minimal()
+```
+
+Na histogramie widać, że rozkład Age względem Survived jest bardzo podobny, więć wynik testu powie nam, czy mediana
+pomiędzy grupami jest różna.
 
 Hipotezy:
 
-* H0: wiek osób, które przeżyły katastrofę jest równa wieku osób, które zginęły.
-* H1: wiek osób, które przeżyły katastrofę jest różna od wieku osób, które zginęły.
+* H0: wiek osób, które przeżyły katastrofę jest równy wieku osób, które zginęły.
+* H1: wiek osób, które przeżyły katastrofę jest różny od wieku osób, które zginęły.
+
 
 ```{r echo=FALSE}
-result <- wilcox.test(Age ~ Survived, data = df_imputed, alternative = "two.sided")
-result
+wilcox.test(Age ~ Survived, data = df_imputed, alternative = "two.sided")
 ```
-P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.<br/>
-Wiek osób, które przeżyły katastrofę jest różny od wieku osób, które zginęły.
+
+P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona i nie mamy podstaw do odrzucenia hipotezy
+alternatywnej, czyli istnieje statystycznie istotna różnica między wiekiem osób, które przeżyły katastrofę, a wiekiem
+osób, które zginęły.
 
 ```{r echo=FALSE}
 ggplot(df_imputed, aes(x = Survived, y = Age, fill = Survived)) +
@@ -503,23 +525,38 @@ bardzo podobna.
 Drugim testem będzie sprawdzenie, czy opłata za bilet pasażera ma wpływ na to, czy przeżył katastrofę.<br/>
 Z testu Shapiro-Wilka wynika, że zmienna Fare nie jest rozkładem normalnym, więc nie możemy zastosować testów
 parametrycznych.<br/>
-Nie możemy też zastosować testu Kruskala-Wallisa, ponieważ zmienna Survived jest zmienną kategoryczną mniej niż 3
-wartości.<br/>
-W takim przypadku zastosujemy test Wilcoxon-Mann-Whitneya.<br/>
+Nie zastosujemy też testu Kruskala-Wallisa, ponieważ jest on zalecany dla przynajmniej 3 grup, a zmienna Survived
+posiada tylko 2 możliwe wartości.<br/>
+W takim przypadku zastosujemy test Wilcoxon-Mann-Whitneya, ponieważ mamy jedną zmienną zależną, która jest mierzona na
+poziomie ciągłym lub porządkowym - Fare, oraz drugą zmienną niezależną, która składa się z dwóch niezależnych
+kategorycznych grup - Survived (Y/N), a nasze obserwacje są niezależne.<br/>
 Poziom istotności ustalamy na 0.05.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(df_imputed, aes(x = Fare, fill = Survived)) +
+        geom_histogram(alpha = 0.5, position = "identity") +
+        labs(title = "Fare vs. Survived", x = "Fare", y = "Count") +
+        scale_fill_manual(values = c("red", "green")) +
+        theme_minimal()
+```
+
+Na histogramie widać, że rozkład Fare względem Survived jest bardzo podobny, więć wynik testu powie nam, czy mediana
+pomiędzy grupami jest różna.
 
 Hipotezy:
 
-* H0: opłąta za bilet osób, które przeżyły katastrofę jest większa od opłaty za bilet osób, które zginęły.
-* H1: opłata za bilet osób, które przeżyły katastrofę jest mniejsza od opłaty za bilet osób, które zginęły.
+* H0: opłata za bilet osób, które przeżyły katastrofę jest mniejsza od opłaty za bilet osób, które zginęły.
+* H1: opłata za bilet osób, które przeżyły katastrofę jest większa od opłaty za bilet osób, które zginęły.
+
 
 ```{r echo=FALSE}
-result <- wilcox.test(Fare ~ Survived, data = df_imputed, alternative = "less")
-result
+fare_of_survived <- df_imputed[df_imputed$Survived == "Yes", "Fare"]
+fare_of_died <- df_imputed[df_imputed$Survived == "No", "Fare"]
+wilcox.test(fare_of_survived, fare_of_died, alternative = "greater")
 ```
-P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.<br/>
-Osoby, które przeżyły katastrofę, zapłaciły za bilet więcej niż osoby, które zginęły.<br/>
-P-value jest dużo mniejsze niż 0.05, i widać to też na wykresie - różnica pomiędzy grupami jest znacząca.
+P-value jest mniejsze od 0.05, więc odrzucamy hipotezę zerową i nie mamy podstaw do odrzucenia hipotezy alternatywnej,
+czyli osoby, które przeżyły katastrofę, zapłaciły za bilet więcej niż osoby, które zginęły.
+
 
 ```{r echo=FALSE}
 # zrób wykresy opłaty za bilet w zależności od tego, czy pasażer przeżył katastrofę
@@ -530,11 +567,13 @@ ggplot(df_imputed, aes(x = Survived, y = Fare, fill = Survived)) +
 ```
 
 Wykres boxplot również potwierdza, że opłaty za bilet osób, które przeżyły katastrofę były wyższe niż opłaty za bilet
-osób, które zginęły.
+osób, które zginęły.<br/>
+P-value jest dużo mniejsze niż 0.05, i widać to też na wykresie - różnica pomiędzy grupami jest znacząca.
 
 ### 3. Badanie wpływu klasy na to, czy pasażer przeżył katastrofę.
 Trzecim testem będzie sprawdzenie, czy klasa pasażera ma wpływ na to, czy przeżył katastrofę.<br/>
-Użyjemy tutaj testu chi-kwadrat, ponieważ obie zmienne są zmiennymi kategorycznymi.<br/>
+Użyjemy tutaj testu chi-kwadrat, ponieważ obie zmienne są zmiennymi kategorycznymi, zawierającymi 2 lub więcej
+niezależnych grup.<br/>
 Poziom istotności ustalamy na 0.05.
 
 Hipotezy:
@@ -542,18 +581,17 @@ Hipotezy:
 * H0: klasa pasażera nie ma wpływu na to, czy przeżył katastrofę.
 * H1: klasa pasażera ma wpływ na to, czy przeżył katastrofę.
 
-Korelacja Pclass i Survived
 ```{r echo=FALSE}
-pclass_as_numbers <- as.numeric(df_imputed$Pclass)
-survided_as_numbers <- as.numeric(df_imputed$Survived)
-cor(pclass_as_numbers, survided_as_numbers)
+# pclass_as_numbers <- as.numeric(df_imputed$Pclass)
+# survided_as_numbers <- as.numeric(df_imputed$Survived)
+# cor(pclass_as_numbers, survided_as_numbers)
 ```
 
 ```{r echo=FALSE}
 chisq.test(df_imputed$Pclass, df_imputed$Survived) # TODO użyć testu alternatywnego dla ANOVA zamiast tego
 ```
-P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.
-Klasa pasażera ma wpływ na to, czy przeżył katastrofę.
+P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona i przyjmujemy, że istnieje istotna różnica między
+klasami pasażerów w zależności od tego, czy przeżyli katastrofę.
 
 ```{r echo=FALSE}
 ggplot(df_imputed, aes(x = Pclass, fill = Survived)) +
@@ -569,7 +607,9 @@ P-value jest dużo mniejsze niż 0.05, i widać to też na wykresie - różnica 
 Czwartym testem będzie sprawdzenie, czy wiek pasażera ma wpływ na to, w jakiej klasie podróżował.<br/>
 Z powyższego testu Shapiro-Wilka wynika, że zmienna Age nie jest rozkładem normalnym, więc nie możemy zastosować
 testów parametrycznych.<br/>
-Zastosujemy więc test Kruskala-Wallisa.<br/>
+Zastosujemy więc test Kruskala-Wallisa, ponieważ mamy jedną zmienną zależną, która jest mierzona na
+poziomie ciągłym lub porządkowym - Age, oraz drugą zmienną niezależną, która składa się z 3 niezależnych
+kategorycznych grup - Survived (Y/N) i nasze obserwacje są niezależne.<br/>
 Poziom istotności ustalamy na 0.05.
 
 Hipotezy:
@@ -580,8 +620,8 @@ Hipotezy:
 ```{r echo=FALSE}
 kruskal.test(Age ~ Pclass, data = df_imputed)
 ```
-P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona.<br/>
-Wiek osób w każdej klasie jest różny.
+P-value jest mniejsze od 0.05, więc hipoteza zerowa jest odrzucona i nie mamy podstaw do odrzucenia hipotezy
+alternatywnej, czyli wiek osób w każdej klasie jest różny.
 
 ```{r echo=FALSE}
 ggplot(df_imputed, aes(x = Pclass, y = Age, fill = Pclass)) +

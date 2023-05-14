@@ -1,0 +1,143 @@
+# Zadanie
+Pobierz zbiór Drug Classification dotyczący klasyfikacji leków
+https://www.kaggle.com/datasets/prathamtripathi/drug-classification
+
+Podziel zbiór na część uczącą i testową w proporcji 8:2.
+Wytrenuj na zbiorze uczącym wybrane modele spośród poznanych na tych laboratoriach.
+Dokonaj predykcji na zbiorze testowym.
+Zidentyfikuj kilka najbardziej istotnych zmiennych w każdym modelu.
+Na podstawie macierzy pomyłek oraz dokładności (accuracy) określ, który model zadziałał najlepiej, a który najgorzej.
+Podsumuj, jakie zmienne najczęściej były istotne w modelach.
+
+```{r}
+library(caret)
+library(rio)
+library(kableExtra)
+library(tidyverse)
+library(rpart)
+library(rpart.plot)
+file_path <- file.path(getwd(), "data/drug200.csv")
+df <- read.table(file_path, header = TRUE, sep = ",")
+head(df)
+
+df$Drug <- as.factor(df$Drug)
+```
+
+```{r}
+# Podziel zbiór na część uczącą i testową w proporcji 8:2.
+set.seed(123)
+inTrain <- createDataPartition(y = df$Drug, p = 0.75, list = FALSE)
+training <- df[inTrain,]
+testing <- df[-inTrain,]
+
+print("Training set")
+prop.table(table(training$Drug))
+print("Testing set")
+prop.table(table(testing$Drug))
+```
+
+```{r}
+dt <- rpart(
+  Drug ~ .,
+  data = training,
+  method = "class",
+  control = rpart.control(minsplit = 10, minbucket = 10, maxdepth = 4)
+)
+dt
+rpart.plot(dt)
+```
+
+```{r}
+# dt$variable.importance
+varimp <- data.frame(dt$variable.importance) %>%
+  tibble::rownames_to_column() %>%
+  dplyr::rename("variable" = rowname, "imp" = dt.variable.importance) %>%
+  dplyr::arrange(imp) %>%
+  dplyr::mutate(variable = forcats::fct_inorder(variable))
+ggplot2::ggplot(varimp) +
+  geom_col(aes(x = variable, y = imp),
+           col = "black", show.legend = F) +
+  coord_flip() +
+  scale_fill_grey() +
+  theme_bw()
+```
+
+
+```{r}
+# przy użyciu caret
+trCtrl <- trainControl(method = 'repeatedcv',
+                       number = 5,
+                       repeats = 5)
+mod_rpart <- train(Drug ~ .,
+                   data = training,
+                   method = "rpart",
+                   trControl = trCtrl
+)
+mod_rpart
+rpart.plot(mod_rpart$finalModel)
+```
+
+```{r}
+y_rpart <- predict(mod_rpart, newdata = testing)
+cm_rpart <- confusionMatrix(y_rpart, testing$Drug)
+cm_rpart$table
+```
+
+```{r}
+cm_rpart$overall['Accuracy']
+```
+
+
+```{r}
+set.seed(123)
+# grid <- data.frame(mtry=2:10) # będziemy testować wartości mtry od 2 do 10
+# mod_rf <- train(Drug~.,
+#                 data=training,
+#                 method="rf",
+#                 trControl=trCtrl,
+#                 tuneGrid=grid)
+# mod_rf # najlepsza wartość mtry to 6
+library(randomForest)
+mod_rf <- randomForest(Drug ~ .,
+                       data = training,
+                       mtry = 6,
+                       importance = TRUE)
+mod_rf
+randomForest::varImpPlot(mod_rf)
+```
+
+```{r}
+y_rf <- predict(mod_rf, newdata = testing)
+cm_rf <- confusionMatrix(y_rf, testing$Drug)
+cm_rf$table
+cm_rf$overall['Accuracy']
+
+```
+
+
+```{r}
+# kNN
+set.seed(123)
+trCtrl <- trainControl(method = 'repeatedcv',
+                       number = 5,
+                       repeats = 5)
+mod_knn <- train(Drug ~ .,
+                 data = training,
+                 method = "knn",
+                 trControl = trCtrl,
+                 tuneLength = 20
+)
+mod_knn
+
+```
+
+
+```{r}
+plot(mod_knn)
+```
+
+```{r}
+knnPredict <- predict(mod_knn, newdata = testing)
+cm_knn <- confusionMatrix(knnPredict, testing$Drug)
+confusionMatrix(knnPredict, testing$Drug)
+```

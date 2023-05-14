@@ -1,0 +1,56 @@
+# ZADANIE
+
+Dokonaj analizy regresyjnej na zbiorze Auto MPG dataset dostępnym pod adresem
+https://archive.ics.uci.edu/ml/datasets/Auto+MPG.
+Jest to zbiór podobny do mtcars z pakietu podstawowego w R.
+W celu pobrania zbioru z podanego linku należy wejść w “Data Folder” i pobrać auto-mpg.data oraz auto-mpg.names.
+W pierwszym z tych plików znajdują się dane - można zmienić rozszerzenie na csv lub txt.
+W drugim pliku znajduje się opis zbioru, między innymi nazwy poszczególnych kolumn.
+Zmienną zależną jest mpg (spalanie samochodu wyrażone poprzez liczbę mil przejechaną na galonie paliwa).
+Sprawdź, czy w zbiorze występują braki (jeśli tak, to uzupełnij je lub usuń) oraz czy kolumny ze zmiennymi mają
+odpowiednie typy danych.
+Podziel zbiór na część uczącą i testową, tak aby ucząca stanowiła 75% całości.
+Zdecyduj, które zmienne nadają się na predyktory do modeli (przykładowo: do modelu nie należy włączać zmiennych
+unikalnych takich jak identyfikator; nie ma potrzeby włączać zmiennych, które mają stale taką samą wartość, itp.).
+Wytrenuj na zbiorze uczącym wybrane modele spośród poznanych na tych laboratoriach.
+Dokonaj predykcji na zbiorze testowym.
+Zidentyfikuj kilka najbardziej istotnych zmiennych w każdym modelu.
+Na podstawie dostępnych metryk (np. RMSE, R2) określ, który model zadziałał najlepiej, a który najgorzej.
+Podsumuj, jakie zmienne najczęściej były istotne w modelach.
+
+```{r}
+file_path <- file.path(getwd(), "lab_9/data/auto-mpg.data")
+col_names <- c("mpg", "cylinders", "displacement", "horsepower", "weight", "acceleration", "model_year", "origin", "car_name")
+data <- read.csv(file_path, header = FALSE, sep = "", col.names = col_names)
+
+library(dplyr)
+data <- data %>% mutate(horsepower = ifelse(horsepower == "?", NA, horsepower))
+data$horsepower <- as.numeric(data$horsepower)
+data$mpg <- as.numeric(data$mpg)
+
+library(ggmice)
+plot_pattern(data, rotate = TRUE)
+library(mice)
+s <- mice(data, m = 5, maxit = 50, meth = 'pmm', seed = 500)
+df_imputed <- complete(s, 1)
+md.pattern(df_imputed, rotate.names = TRUE)
+
+# Podziel zbiór na część uczącą i testową, tak aby ucząca stanowiła 75% całości.
+set.seed(2023)
+library(caret)
+inTrain <- createDataPartition(
+  y = df_imputed$mpg,
+  p = 0.75,
+  list = FALSE
+)
+
+training <- df_imputed[inTrain,]
+testing <- df_imputed[-inTrain,]
+
+```
+
+
+```{r}
+r_forest <- train(mpg ~ ., data = training, method = "rf")
+r_forest
+```

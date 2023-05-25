@@ -1,0 +1,67 @@
+# Load packages
+```{r}
+library(keras)
+```
+
+
+# Load data
+```{r}
+# Wczytanie danych
+data <- dataset_boston_housing()
+
+# Podział na zbiór treningowy i testowy
+c(train_x, train_y) %<-% data$train
+c(test_x, test_y) %<-% data$test
+
+# Standaryzacja danych
+mean <- apply(train_x, 2, mean)
+std <- apply(train_x, 2, sd)
+train_x <- scale(train_x, center = mean, scale = std)
+test_x <- scale(test_x, center = mean, scale = std)
+```
+
+
+# Create model
+```{r}
+# Tworzenie modelu
+model <- keras_model_sequential() %>%
+  layer_dense(units = 64, activation = 'relu', input_shape = dim(train_x)[2]) %>%
+  layer_dense(units = 64, activation = 'relu') %>%
+  layer_dense(units = 1)
+
+# Kompilowanie modelu
+model %>% compile(
+  optimizer = 'rmsprop',
+  loss = 'mse',
+  metrics = c('mean_absolute_error')
+)
+
+```
+
+
+# Train model
+```{r}
+# Trenowanie modelu
+history <- model %>% fit(
+  train_x,
+  train_y,
+  epochs = 100,
+  batch_size = 1,
+  validation_split = 0.2
+)
+
+```
+
+
+# Plot results
+```{r}
+# Wykres na podstawie historii trenowania
+plot(history)
+```
+
+
+# Evaluate model
+```{r}
+# Ocena modelu na zbiorze testowym
+model %>% evaluate(test_x, test_y)
+```

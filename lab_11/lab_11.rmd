@@ -1,0 +1,51 @@
+```{r}
+library(rio)
+library(tidyverse)
+
+file_name <- "titanic.csv"
+file_path <- if (file.exists("projekt_1")) "lab_11/" else "./"
+df <- read.csv(paste0(file_path, file_name), header = TRUE, encoding = "UTF-8", na.strings = c("", "NA"))
+head(df)
+```
+
+```{r}
+X <- df %>%
+  select(-c(Name, Ticket, Cabin, Embarked, PassengerId)) %>%
+  na.omit() %>%
+  select(-c(Survived)) %>%
+  mutate(Sex = as.factor(Sex)) %>%  # Convert "Sex" to a factor (if not already)
+  select(-c(Sex)) %>%                # Remove the original "Sex" column
+  as.matrix()
+
+pca_model <- prcomp(X, scale = T)
+pods <- summary(pca_model)
+pods
+```
+
+```{r}
+x <- 1:5
+imp <- pods$importance %>% as.matrix()
+y <- unname(imp["Proportion of Variance",])
+rownames(y) <- NULL
+y <- as.vector(y)
+ggplot(data.frame(PC.number = x, Proportion.of.variance = y), aes(x = PC.number, y = Proportion.of.variance)) +
+  geom_point() +
+  scale_x_discrete(limits = x) +
+  geom_line() +
+  labs(x = "PC number", y = "Proportion of variance")
+
+```
+
+```{r}
+X_pca <- pca_model$x[, 1:3]
+dim(X_pca)
+head(X_pca)
+```
+
+```{r}
+library(factoextra)
+fviz_contrib(pca_model, choice = "var", axes = 1)
+fviz_contrib(pca_model, choice = "var", axes = 2)
+fviz_contrib(pca_model, choice = "var", axes = 3)
+fviz_contrib(pca_model, choice = "var", axes = 1:3)
+```

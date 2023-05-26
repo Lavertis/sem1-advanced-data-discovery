@@ -1,0 +1,47 @@
+```{r}
+file_name <- "titanic.csv"
+file_path <- if (file.exists("projekt_1")) "lab_11/" else "./"
+df <- read.csv(paste0(file_path, file_name), header = TRUE, encoding = "UTF-8", na.strings = c("", "NA"))
+head(df)
+```
+
+```{r}
+summary(df)
+```
+
+```{r}
+X <- df %>%
+  select(-c(Name, Ticket, Cabin, Embarked, PassengerId)) %>%
+  na.omit() %>%
+  select(-c(Survived)) %>%
+  mutate(Sex = as.factor(Sex)) %>%  # Convert "Sex" to a factor (if not already)
+  select(-c(Sex)) %>%                # Remove the original "Sex" column
+  as.matrix()
+X <- as.data.frame(scale(X))
+```
+
+```{r}
+dist_mat <- dist(X)
+library(reshape2)
+library(tidyverse)
+ggplot(melt(as.matrix(dist_mat)), aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+```{r}
+dist_mat2 <- dist(X, method = "manhattan")
+ggplot(melt(as.matrix(dist_mat2)), aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+```{r}
+mod.hc.single <- hclust(dist_mat, method = "single")
+plot(mod.hc.single, cex = 0.6)
+```
+
+```{r}
+mod.hc.single <- hclust(dist_mat, method = "single")
+plot(mod.hc.single, cex = 0.6)
+```
